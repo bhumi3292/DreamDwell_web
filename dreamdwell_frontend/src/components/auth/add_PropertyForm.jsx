@@ -20,22 +20,26 @@ export default function AddPropertyForm() {
             guests: '',
             bedrooms: '',
             bathrooms: '',
+            description: '', // Added description field
         },
         validationSchema: Yup.object({
             title: Yup.string().required('Title is required'),
             location: Yup.string().required('Location is required'),
-            price: Yup.number().positive().required('Price is required'),
+            price: Yup.number().positive('Price must be positive').required('Price is required'),
             type: Yup.string().required('Property type is required'),
-            guests: Yup.number().positive().required('Guests count is required'),
-            bedrooms: Yup.number().min(1).required('Bedroom count is required'),
-            bathrooms: Yup.number().min(1).required('Bathroom count is required'),
+            guests: Yup.number().positive('Guests count must be positive').required('Guests count is required'),
+            bedrooms: Yup.number().min(1, 'At least 1 bedroom is required').required('Bedroom count is required'),
+            bathrooms: Yup.number().min(1, 'At least 1 bathroom is required').required('Bathroom count is required'),
+            description: Yup.string()
+                .max(250, 'Description must be 250 characters or less')
+                .required('Description is required'),
         }),
         onSubmit: (values) => {
             console.log("Form Data:", values);
             console.log("Uploaded Images:", images);
             console.log("Uploaded Videos:", videos);
             toast.success("Property added successfully!");
-            // Backend logic for uploading files goes here
+
         },
     });
 
@@ -43,6 +47,7 @@ export default function AddPropertyForm() {
         const selected = Array.from(e.target.files).filter(file =>
             file.type.startsWith("image/")
         );
+        // Concatenate new images with existing ones
         setImages(prev => [...prev, ...selected]);
     };
 
@@ -50,6 +55,7 @@ export default function AddPropertyForm() {
         const selected = Array.from(e.target.files).filter(file =>
             file.type.startsWith("video/")
         );
+        // Concatenate new videos with existing ones
         setVideos(prev => [...prev, ...selected]);
     };
 
@@ -69,15 +75,16 @@ export default function AddPropertyForm() {
                 {/* Inputs */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {["title", "location", "price"].map((field) => (
-                        <div key={field}>
-                            <label className="block font-medium capitalize">{field.replace(/([A-Z])/g, ' $1')}</label>
+                        <div key={field} className="flex flex-col">
+                            <label htmlFor={field} className="block font-medium capitalize">{field.replace(/([A-Z])/g, ' $1')}</label>
                             <input
                                 type={field === "price" ? "number" : "text"}
+                                id={field}
                                 name={field}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
                                 value={formik.values[field]}
-                                className="w-full p-3 border rounded bg-gray-100"
+                                className="w-full p-3 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
                             {formik.touched[field] && formik.errors[field] && (
                                 <p className="text-red-600 text-sm mt-1">{formik.errors[field]}</p>
@@ -85,14 +92,15 @@ export default function AddPropertyForm() {
                         </div>
                     ))}
 
-                    <div>
-                        <label className="block font-medium">Property Type</label>
+                    <div className="flex flex-col">
+                        <label htmlFor="type" className="block font-medium">Property Type</label>
                         <select
+                            id="type"
                             name="type"
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
                             value={formik.values.type}
-                            className="w-full p-3 border rounded bg-gray-100"
+                            className="w-full p-3 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
                         >
                             <option value="">Select Type</option>
                             <option value="villa">Villa</option>
@@ -105,21 +113,43 @@ export default function AddPropertyForm() {
                     </div>
 
                     {["guests", "bedrooms", "bathrooms"].map((field) => (
-                        <div key={field}>
-                            <label className="block font-medium capitalize">{field}</label>
+                        <div key={field} className="flex flex-col">
+                            <label htmlFor={field} className="block font-medium capitalize">{field}</label>
                             <input
                                 type="number"
+                                id={field}
                                 name={field}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
                                 value={formik.values[field]}
-                                className="w-full p-3 border rounded bg-gray-100"
+                                className="w-full p-3 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
                             {formik.touched[field] && formik.errors[field] && (
                                 <p className="text-red-600 text-sm mt-1">{formik.errors[field]}</p>
                             )}
                         </div>
                     ))}
+                </div>
+
+                {/* Description */}
+                <div className="flex flex-col">
+                    <label htmlFor="description" className="block font-medium mb-1">Description (Max 250 words)</label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        value={formik.values.description}
+                        rows="4"
+                        className="w-full p-3 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
+                        maxLength={250} // Limit character input
+                    ></textarea>
+                    {formik.touched.description && formik.errors.description && (
+                        <p className="text-red-600 text-sm mt-1">{formik.errors.description}</p>
+                    )}
+                    <p className="text-gray-500 text-sm mt-1 text-right">
+                        {formik.values.description.length} / 250 characters
+                    </p>
                 </div>
 
                 {/* Image Upload */}
@@ -153,7 +183,8 @@ export default function AddPropertyForm() {
                                     <button
                                         type="button"
                                         onClick={() => removeFile("image", index)}
-                                        className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition"
+                                        className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remove image"
                                     >
                                         ✕
                                     </button>
@@ -194,7 +225,8 @@ export default function AddPropertyForm() {
                                     <button
                                         type="button"
                                         onClick={() => removeFile("video", index)}
-                                        className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition"
+                                        className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remove video"
                                     >
                                         ✕
                                     </button>
@@ -207,7 +239,7 @@ export default function AddPropertyForm() {
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    className="bg-[#002B5B] text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all"
+                    className="bg-[#002B5B] text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
                 >
                     Add Property
                 </button>

@@ -1,12 +1,13 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const connectDB = require("../dreamdwell_backend/config/db");
+// <<<--- CORRECTED PATH: Relative path to config/db.js
+const connectDB = require("./config/db");
 
-const authRoutes = require("../dreamdwell_backend/routes/authRoutes");
-const propertyRoutes = require("../dreamdwell_backend/routes/propertyRoutes");
+// <<<--- CORRECTED PATHS: Relative paths to routes
+const authRoutes = require("./routes/authRoutes");
+const propertyRoutes = require("./routes/propertyRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
- const adminUserRoutes = require("../dreamdwell_backend/routes/userRoutes");
 
 const app = express();
 app.use(cors());

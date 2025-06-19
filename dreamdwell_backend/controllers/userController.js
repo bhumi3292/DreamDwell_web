@@ -1,65 +1,95 @@
-const User = require("../models/User");
-const bcrypt = require("bytes");
-const jwt = require("jsonwebtoken");
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
-// Register
-exports.register = async (req, res) => {
+// Get all users (admin-only)
+exports.getAllUsers = async (req, res) => {
     try {
-        const { fullName, email, phoneNumber, role, password, profilePicture } = req.body;
+        const users = await User.find().select('-password');
+        return res.status(200).json({ success: true, users });
+    } catch (err) {
+        console.error('Error fetching users:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
 
-        const existingUser = await User.findOne({email});
-        if (existingUser) return res.status(400).json({ message: "Email already in use" });
+// Get single user by ID
+exports.getUserById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const user = await User.findById(id).select('-password');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        return res.status(200).json({ success: true, user });
+    } catch (err) {
+        console.error('Error fetching user:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+// Update user profile
+exports.updateUserProfile = async (req, res) => {
+    const { fullName, phoneNumber } = req.body;
+    const userId = req.user._id; // Assumes authentication middleware
 
-        const user = new User({
-            fullName,
-            email,
-            phoneNumber,
-            role,
-            password: hashedPassword,
-            profilePicture
-        });
+    try {
+        const user = await User.findById(userId);
+
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.fullName = fullName || user.fullName;
+        user.phoneNumber = phoneNumber || user.phoneNumber;
 
         await user.save();
-        res.status(201).json({ message: "User registered", user });
+
+        return res.status(200).json({ success: true, message: 'Profile updated successfully', user });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error updating profile:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
-// Login
-exports.login = async (req, res) => {
+// Change password
+exports.changePassword = async (req, res) => {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.user._id; // Assumes authentication middleware
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({ success: false, message: 'New passwords do not match' });
+    }
+
     try {
-        const { email, password } = req.body;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "User not found" });
+        const isMatch = await user.comparePassword(oldPassword);
+        if (!isMatch) return res.status(401).json({ success: false, message: 'Old password is incorrect' });
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+        user.password = newPassword; // Will be hashed by pre-save hook
+        await user.save();
 
-        const token = jwt.sign({ id: user._id }, "your_jwt_secret", { expiresIn: "1d" });
-
-        res.status(200).json({ token, user });
+        return res.status(200).json({ success: true, message: 'Password changed successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error changing password:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
-// Update
-exports.updateUser = async (req, res) => {
+// Delete user account
+exports.deleteUser = async (req, res) => {
+    const userId = req.user._id; // Assumes authentication middleware
+
     try {
-        const { id } = req.params;
-        const updates = req.body;
+        const user = await User.findByIdAndDelete(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        if (updates.password) {
-            updates.password = await bcrypt.hash(updates.password, 10);
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(id, updates, { new: true });
-        res.status(200).json({ message: "User updated", updatedUser });
+        return res.status(200).json({ success: true, message: 'User account deleted' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error deleting user:', err);
+        return res.status(500).json({ success: false, message: 'Server error' });
     }
 };

@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { useRegisterUserTan } from '../../hooks/userRegisterUserTan.js';
 import { toast } from 'react-toastify';
-// Make sure to import ToastContainer in your main App.js or a layout component
-// For example:
-// import { ToastContainer } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css';
+
 
 export default function RegisterForm() {
     const [formData, setFormData] = useState({

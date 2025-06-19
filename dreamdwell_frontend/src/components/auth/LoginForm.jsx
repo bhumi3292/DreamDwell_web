@@ -1,12 +1,14 @@
 import React, { useContext } from 'react';
-import { useLoginUser } from '../../hooks/useLoginUser.js';
+// Assuming useLoginUser is in useAuthHooks.js or a separate login hook
+import { useLoginUser } from '../../hooks/useLoginUser.js'; // Adjust path if needed
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo.png'; // Adjust path if necessary
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../auth/AuthProvider.jsx';
+
 
 export default function LoginForm() {
     const { mutate, isLoading } = useLoginUser();
@@ -121,6 +123,7 @@ export default function LoginForm() {
                         {isLoading ? "Logging in..." : "Login"}
                     </button>
 
+                    {/* This is the link to the Forgot Password page */}
                     <a href="/forgot-password" className="text-blue-600 font-medium text-sm hover:underline text-center mt-2">
                         Forgot Password?
                     </a>

@@ -1,18 +1,12 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/home.jsx";
-import Login from "./pages/login.jsx";
-import ForgetPassword from "./pages/forgetPassword.jsx";
-import SignupPage from "./pages/signup.jsx";
-import Agreement from "./pages/agreement.jsx";
-import PropertyPage from "./pages/property.jsx";
-import AddProperty from "./pages/add_property.jsx";
-import Navbar from "./layouts/navbar.jsx";
-import AuthContextProvider from "./auth/authProvider";
+import { BrowserRouter as Router } from "react-router-dom";
+import AppRoutes from "./routers/AppRouter.jsx"
+import Navbar from "./layouts/navbar.jsx"; // Adjust path if necessary
+import AuthContextProvider from "./auth/AuthProvider"; // Adjust path if necessary
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
-import "./App.css";
+import "./App.css"; // Your global CSS
 
 const queryClient = new QueryClient();
 
@@ -23,15 +17,7 @@ function App() {
                 <Router>
                     <Navbar />
                     <div className="pt-[70px]">
-                        <Routes>
-                            <Route path="/" element={<Home />} />
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/forget-password" element={<ForgetPassword />} />
-                            <Route path="/signup" element={<SignupPage />} />
-                            <Route path="/agreement" element={<Agreement />} />
-                            <Route path="/property" element={<PropertyPage />} />
-                            <Route path="/add-property" element={<AddProperty />} />
-                        </Routes>
+                        <AppRoutes /> {/* This is where all your routes are handled */}
                     </div>
                 </Router>
                 <ToastContainer

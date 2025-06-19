@@ -1,8 +1,9 @@
 const User = require("../models/User");
-const bcrypt = require("bcrypt");
-const jwt = require('jsonwebtoken');
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { sendEmail } = require("../utils/sendEmail");
 
-// Register User (No changes needed here)
+// Register User
 exports.registerUser = async (req, res) => {
     const { fullName, email, phoneNumber, stakeholder, password, confirmPassword } = req.body;
 
@@ -24,14 +25,12 @@ exports.registerUser = async (req, res) => {
             return res.status(400).json({ success: false, message: "Email already in use" });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-
         const newUser = new User({
             fullName,
             email,
             phoneNumber,
-            role: stakeholder, // Schema uses 'role', so map 'stakeholder' to 'role'
-            password: hashedPassword
+            role: stakeholder,
+            password // Pre-save hook will hash this
         });
 
         await newUser.save();
@@ -43,7 +42,7 @@ exports.registerUser = async (req, res) => {
     }
 };
 
-// Login User (Modified to fix login and show Navbar elements)
+// Login User
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -52,57 +51,39 @@ exports.loginUser = async (req, res) => {
     }
 
     try {
-        console.log("Backend: Finding user by email:", email);
         const user = await User.findOne({ email });
-        console.log("Backend: User found:", user ? user.email : "none"); // Log user email if found
-
         if (!user) {
-            console.log("Backend: User not found for email:", email);
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        console.log("Backend: Comparing passwords...");
-        // CRITICAL FIX: AWAIT the bcrypt.compare function
-        const passwordMatch = await bcrypt.compare(password, user.password);
-
+        const passwordMatch = await user.comparePassword(password);
         if (!passwordMatch) {
-            console.log("Backend: Password mismatch for user:", email);
             return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
 
-        // Payload for JWT token (contains data for authentication middleware)
         const payload = {
             _id: user._id,
             email: user.email,
-            stakeholder: user.role
+            role: user.role
         };
-        console.log("Backend: Generating token with payload:", payload);
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-        // Prepare the user data to send to the frontend
-        // Exclude the password for security
         const { password: _, ...userWithoutPassword } = user.toObject();
 
-        // Ensure userWithoutPassword contains fullName and role (from schema)
-        console.log("Backend: User data sent to frontend:", userWithoutPassword);
-
-        // CRITICAL FIX: Change 'data: userData' to 'user: userWithoutPassword'
-        // This matches what your frontend LoginForm expects.
         return res.status(200).json({
             success: true,
             message: "Login successful",
             token,
-            user: userWithoutPassword // Frontend expects 'user' key
+            user: userWithoutPassword
         });
-
     } catch (err) {
-        console.error("Backend: Login Error:", err);
+        console.error("Login Error:", err);
         return res.status(500).json({ success: false, message: "Server error" });
     }
 };
 
-// Get User ID by Email, Password, and Stakeholder
+// Find User ID by Credentials
 exports.findUserIdByCredentials = async (req, res) => {
     const { email, password, stakeholder } = req.body;
 
@@ -112,12 +93,11 @@ exports.findUserIdByCredentials = async (req, res) => {
 
     try {
         const user = await User.findOne({ email, role: stakeholder });
-
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found with provided credentials" });
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await user.comparePassword(password);
         if (!isPasswordValid) {
             return res.status(401).json({ success: false, message: "Incorrect password" });
         }
@@ -126,5 +106,92 @@ exports.findUserIdByCredentials = async (req, res) => {
     } catch (err) {
         console.error("User ID Fetch Error:", err);
         return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+// Send Password Reset Link
+exports.sendPasswordResetLink = async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            console.log(`Password reset requested for non-existent email: ${email}`);
+            return res.status(200).json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+        }
+
+        const resetToken = jwt.sign(
+            { userId: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+        const subject = 'DreamDwell Password Reset Request';
+        const text = `You requested a password reset. Use this link to reset your password: ${resetUrl}`;
+        const html = `
+            <p>Hello ${user.fullName},</p>
+            <p>You recently requested to reset your password for your DreamDwell account.</p>
+            <p>Click the link below to reset your password:</p>
+            <p><a href="${resetUrl}" style="background-color: #002B5B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Your Password</a></p>
+            <p>This link is valid for <b>1 hour</b>.</p>
+            <p>If you did not request this, please ignore this email.</p>
+            <p>Thank you,<br/>The DreamDwell Team</p>
+        `;
+
+        await sendEmail(user.email, subject, text, html);
+
+        return res.status(200).json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+    } catch (error) {
+        console.error('Error in sendPasswordResetLink:', error);
+        return res.status(500).json({ success: false, message: 'Failed to send password reset link. Please try again later.' });
+    }
+};
+
+// Reset Password Handler
+exports.resetPassword = async (req, res) => {
+    const { token } = req.params;
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!newPassword || !confirmPassword) {
+        return res.status(400).json({ success: false, message: 'Both password fields are required.' });
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({ success: false, message: 'Passwords do not match.' });
+    }
+
+    if (newPassword.length < 8) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found or token is invalid.' });
+        }
+
+        user.password = newPassword; // Pre-save hook will hash it
+        await user.save();
+
+        return res.status(200).json({ success: true, message: 'Password has been reset successfully.' });
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(400).json({ success: false, message: 'Reset link expired. Please request a new one.' });
+        }
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(400).json({ success: false, message: 'Invalid reset token. Please request a new one.' });
+        }
+
+        console.error('Error in resetPassword:', error);
+        return res.status(500).json({ success: false, message: 'Failed to reset password. Please try again later.' });
     }
 };
