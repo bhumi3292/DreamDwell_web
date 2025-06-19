@@ -1,18 +1,25 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
-const connectDB = require("../dreamdwell_backend/config/db");
 
-const authRoutes = require("../dreamdwell_backend/routes/authRoutes");
-const propertyRoutes = require("../dreamdwell_backend/routes/propertyRoutes");
+const connectDB = require("./config/db");
+
+// Route imports
+const authRoutes = require("./routes/authRoutes");
+const propertyRoutes = require("./routes/propertyRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
- const adminUserRoutes = require("../dreamdwell_backend/routes/userRoutes");
 
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Connect to DB
 connectDB()
     .then(() => console.log("MongoDB connected"))
     .catch((err) => {
@@ -25,8 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/bookings", bookingRoutes);
 
-
-// Health check endpoint
+// Health check
 app.get("/", (req, res) => {
     res.send("DreamDwell backend running...");
 });
@@ -40,8 +46,13 @@ app.use((err, req, res, _next) => {
     });
 });
 
-// Start the server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// ✅ Only start server if this file is run directly (not when imported in tests)
+if (require.main === module) {
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+// ✅ Export app for Supertest
+module.exports = app;
