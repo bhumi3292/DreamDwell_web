@@ -21,7 +21,7 @@ const AuthContextProvider = ({ children }) => {
         } catch (error) {
             console.error("AuthContext: Failed to save user data to localStorage:", error);
         } finally {
-            setLoading(false); // End loading state
+            setLoading(false);
         }
     };
 
