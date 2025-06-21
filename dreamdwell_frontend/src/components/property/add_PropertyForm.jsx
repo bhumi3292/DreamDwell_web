@@ -1,9 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { toast, ToastContainer } from 'react-toastify';
+import axios from '../../api/api'; // Assuming axios instance
+import { toast, ToastContainer } from 'react-toastify'; // ToastContainer might be redundant if App.js has one
 import 'react-toastify/dist/ReactToastify.css';
 import { FiUploadCloud, FiMapPin } from 'react-icons/fi';
+import { useCreateProperty } from '../../hooks/propertyHook/useaddProperty.js'; // Import the hook
 
 export default function AddPropertyForm() {
     const imageInputRef = useRef(null);
@@ -11,6 +13,26 @@ export default function AddPropertyForm() {
     const [images, setImages] = useState([]);
     const [videos, setVideos] = useState([]);
     const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const { mutate: createProperty, isLoading } = useCreateProperty(); // Instantiate the hook
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axios.get('/api/category');
+                if (response.data && response.data.success) {
+                    setCategories(response.data.data || []);
+                } else {
+                    console.error("Failed to fetch categories:", response.data.message);
+                    setCategories([]);
+                }
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+                setCategories([]);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const formik = useFormik({
         initialValues: {
@@ -21,6 +43,7 @@ export default function AddPropertyForm() {
             description: '',
             bedrooms: '',
             bathrooms: '',
+            categoryId: '',
         },
         validationSchema: Yup.object({
             title: Yup.string().required('Title is required'),
@@ -32,12 +55,32 @@ export default function AddPropertyForm() {
                 .required('Description is required'),
             bedrooms: Yup.number().min(0, 'Must be 0 or more').required('Bedroom count is required'),
             bathrooms: Yup.number().min(0, 'Must be 0 or more').required('Bathroom count is required'),
+            categoryId: Yup.string().required('Category is required'),
         }),
         onSubmit: (values) => {
-            console.log("Form Data:", values);
-            console.log("Uploaded Images:", images);
-            console.log("Uploaded Videos:", videos);
-            toast.success("Property added successfully!");
+            const formData = new FormData();
+            Object.keys(values).forEach(key => {
+                formData.append(key, values[key]);
+            });
+            images.forEach((imageFile) => {
+                formData.append('images', imageFile);
+            });
+            videos.forEach((videoFile) => {
+                formData.append('videos', videoFile);
+            });
+
+            createProperty(formData, {
+                onSuccess: () => {
+                    formik.resetForm();
+                    setImages([]);
+                    setVideos([]);
+                    // The hook handles toast success
+                },
+                onError: (error) => {
+                    // The hook handles toast error
+                    console.error("Error submitting property from component:", error);
+                }
+            });
         },
     });
 
@@ -149,6 +192,29 @@ export default function AddPropertyForm() {
                     </select>
                     {formik.touched.type && formik.errors.type && (
                         <p className="text-red-600 text-sm mt-1">{formik.errors.type}</p>
+                    )}
+                </div>
+
+                {/* Category Dropdown */}
+                <div className="flex flex-col">
+                    <label htmlFor="categoryId" className="block font-medium">Category</label>
+                    <select
+                        id="categoryId"
+                        name="categoryId"
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        value={formik.values.categoryId}
+                        className="w-full p-3 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                        <option value="">Select Category</option>
+                        {categories.map(category => (
+                            <option key={category._id} value={category._id}>
+                                {category.category_name}
+                            </option>
+                        ))}
+                    </select>
+                    {formik.touched.categoryId && formik.errors.categoryId && (
+                        <p className="text-red-600 text-sm mt-1">{formik.errors.categoryId}</p>
                     )}
                 </div>
 
@@ -298,13 +364,15 @@ export default function AddPropertyForm() {
                 {/* Submit */}
                 <button
                     type="submit"
-                    className="bg-[#002B5B] text-white font-bold py-3 rounded-lg hover:bg-[#001f40] transition"
+                    disabled={isLoading}
+                    className="bg-[#002B5B] text-white font-bold py-3 rounded-lg hover:bg-[#001f40] transition disabled:opacity-50"
                 >
-                    Add Property
+                    {isLoading ? 'Submitting...' : 'Add Property'}
                 </button>
             </form>
 
-            <ToastContainer position="bottom-right" autoClose={2000} />
+            {/* ToastContainer might be better placed in App.js if not already there */}
+            <ToastContainer position="bottom-right" autoClose={3000} />
         </div>
     );
 }
