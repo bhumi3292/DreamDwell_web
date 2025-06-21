@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-//import { createPropertyService } from "../../services/addProductService.jsx";
+import { createProperty } from "../../services/addProductService.jsx";
 import { toast } from "react-toastify";
 
 export const useCreateProperty = () => {
@@ -7,7 +7,7 @@ export const useCreateProperty = () => {
 
     return useMutation({
         mutationKey: ["admin_create_property"],
-        //mutationFn: createPropertyService,
+        mutationFn: createProperty,
         onSuccess: () => {
             toast.success("Property created successfully!");
             queryClient.invalidateQueries(["admin_property_list"]); // optional: refetch list
