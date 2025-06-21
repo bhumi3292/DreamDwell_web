@@ -1,44 +1,17 @@
-import {
-    getAllProductApi,
-    createOneProductApi,
-    getOneProductApi,
-    updateOneProductApi
-} from "../api/productApi.js";
+import axiosInstance from "../utils/axiosInstance.js";
 
-// PRODUCT SERVICES
+export const fetchProperties = (query = "") => axiosInstance.get(`/properties${query}`);
 
-export const getAllProductService = async (params) => {
-    try {
-        const response = await getAllProductApi(params);
-        return response.data;
-    } catch (err) {
-        throw err.response?.data || { message: "Product fetch failed" };
-    }
-};
+export const fetchPropertyById = (id) => axiosInstance.get(`/properties/${id}`);
 
-export const createOneProductService = async (data) => {
-    try {
-        const response = await createOneProductApi(data);
-        return response.data;
-    } catch (err) {
-        throw err.response?.data || { message: "Product creation failed" };
-    }
-};
+export const createProperty = (formData) =>
+    axiosInstance.post("/properties", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+    });
 
-export const getOneProductService = async (id) => {
-    try {
-        const response = await getOneProductApi(id);
-        return response.data;
-    } catch (err) {
-        throw err.response?.data || { message: "Failed to load product" };
-    }
-};
+export const updateProperty = (id, formData) =>
+    axiosInstance.put(`/properties/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+    });
 
-export const updateOneProductService = async (id, data) => {
-    try {
-        const response = await updateOneProductApi(id, data);
-        return response.data;
-    } catch (err) {
-        throw err.response?.data || { message: "Failed to update product" };
-    }
-};
+export const deleteProperty = (id) => axiosInstance.delete(`/properties/${id}`);
