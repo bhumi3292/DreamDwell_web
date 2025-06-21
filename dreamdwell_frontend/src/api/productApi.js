@@ -6,8 +6,8 @@ export const getAllProductApi = async (params) => {
     return await axios.get("/api/products", { params });
 };
 
-export const createOneProductApi = async (data) => {
-    return await axios.post("/api/products", data);
+export const createPropertyApi = async (data) => {
+    return await axios.post("/api/property/create", data);
 };
 
 export const getOneProductApi = async (id) => {
