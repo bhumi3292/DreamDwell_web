@@ -1,11 +1,14 @@
 const mongoose = require("mongoose");
 
 const propertySchema = new mongoose.Schema({
-    image:{
-        type:String,
-        require:true,
+    images: {
+        type: [String],
+        required: false, // will be handled by controller
     },
-
+    videos: {
+        type: [String],
+        required: false,
+    },
     title: {
         type: String,
         required: true,
@@ -14,19 +17,32 @@ const propertySchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    pricePerMonth: {
+    bedrooms: {
+        type: Number,
+        required: false
+    },
+    bathrooms: {
+        type: Number,
+        required: false
+    },
+    categoryId: {
+        type: mongoose.Schema.ObjectId,
+        ref: "Category",
+        required: true
+    },
+    price: {
         type: Number,
         required: true,
     },
-    description: String,
+    description: {
+        type: String,
+        required: false,
+    },
     landlord: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-    },
-    available: {
-        type: Boolean,
-        default: true,
-    },
+        required: true
+    }
 }, { timestamps: true });
 
 const Property = mongoose.model("Property", propertySchema);
