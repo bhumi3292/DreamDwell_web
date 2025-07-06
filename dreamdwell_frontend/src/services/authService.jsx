@@ -1,9 +1,9 @@
 import {
     registerUserApi,
     loginUserApi,
-    // --- UPDATED IMPORTS FOR LINK-BASED PASSWORD RESET ---
-    sendPasswordResetLinkApi, // Now correctly imports the function to send the reset link
-    resetPasswordApi          // Now correctly imports the function to reset password with a token
+    sendPasswordResetLinkApi,
+    resetPasswordApi,
+    changePasswordApi
 } from "../api/authApi";
 
 export const registerUserService = async (formData) => {
@@ -26,7 +26,7 @@ export const loginUserService = async (formData) => {
 };
 
 // --- UPDATED SERVICE FUNCTION FOR SENDING PASSWORD RESET LINK ---
-export const sendPasswordResetLinkService = async (formData) => { // Renamed from sendOtpForPasswordResetService
+export const sendPasswordResetLinkService = async (formData) => {
     try {
         // formData is expected to contain { email: "user@example.com" }
         const response = await sendPasswordResetLinkApi(formData);
@@ -36,14 +36,21 @@ export const sendPasswordResetLinkService = async (formData) => { // Renamed fro
     }
 };
 
-// --- UPDATED SERVICE FUNCTION FOR RESETTING PASSWORD WITH TOKEN ---
-export const resetPasswordService = async (token, formData) => { // Renamed from verifyOtpAndResetPasswordService
+export  const  resetPasswordService = async (formData,token) => {
     try {
-        // This function now expects 'token' as a separate argument,
-        // and 'formData' contains { newPassword, confirmPassword }
-        const response = await resetPasswordApi(token, formData);
+        const response = await resetPasswordApi(formData, token);
+        return response.data
+    } catch (err) {
+        throw err.response?.data || {message: "Reset Password Failed"};
+    }
+}
+
+export const changePasswordService = async (formData) => {
+    try {
+
+        const response = await changePasswordApi(formData);
         return response.data;
     } catch (err) {
-        throw err.response?.data || { message: "Failed to reset password. Invalid link or other error." };
+        throw err.response?.data || { message: "Failed to change password." };
     }
 };

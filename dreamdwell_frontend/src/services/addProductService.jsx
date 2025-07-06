@@ -1,17 +1,22 @@
-import axiosInstance from "../utils/axiosInstance.js";
+// src/services/addPropertyService.jsx
+import {
+    getAllPropertiesApi,
+    getOnePropertyApi,
+    createPropertyApi,
+    updateOnePropertyApi,
+    deletePropertyApi
+} from "../api/propertyApi";
 
-export const fetchProperties = (query = "") => axiosInstance.get(`/properties${query}`);
+export const fetchPropertiesService = async () => {
+    const res = await getAllPropertiesApi();
+    return res.data.data;
+};
 
-export const fetchPropertyById = (id) => axiosInstance.get(`/properties/${id}`);
+export const fetchPropertyById = async (id) => {
+    const res = await getOnePropertyApi(id);
+    return res.data.data;
+};
 
-export const createProperty = (formData) =>
-    axiosInstance.post("/properties", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-    });
-
-export const updateProperty = (id, formData) =>
-    axiosInstance.put(`/properties/${id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-    });
-
-export const deleteProperty = (id) => axiosInstance.delete(`/properties/${id}`);
+export const createPropertyService = (formData) => createPropertyApi(formData);
+export const updatePropertyService = (id, formData) => updateOnePropertyApi(id, formData);
+export const deletePropertyService = (id) => deletePropertyApi(id);
