@@ -1,0 +1,424 @@
+import React, { useEffect, useState, useContext, useMemo } from 'react';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
+import { getOnePropertyApi } from '../api/propertyApi';
+import KhaltiCheckout from 'Khalti-Checkout-web';
+import { addToCartApi, removeFromCartApi, getCartApi } from '../api/cartApi';
+import { FaHeart } from 'react-icons/fa';
+import { FiHeart } from 'react-icons/fi';
+import { AuthContext } from '../auth/AuthProvider';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+import { MapPin, Maximize2, Phone, Mail, Home, DollarSign, User, ChevronLeft, ChevronRight, CreditCard, Calendar as CalendarIcon, MessageSquare } from 'lucide-react';
+
+import { useBookingModal } from '../hooks/useBookingHook.js';
+import BookingModal from '../components/bookingComponents.jsx';
+import LandlordManageAvailabilityModal from '../components/LandlordManageAvailabilityModal.jsx';
+import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+
+
+
+const copyToClipboard = (text, message) => {
+    navigator.clipboard.writeText(text).then(() => toast.success(message)).catch(() => toast.error('Failed to copy.'));
+};
+
+export default function PropertyDetail() {
+    const { id } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    const { isAuthenticated, user, loading: isLoadingAuth } = useContext(AuthContext);
+
+    const [property, setProperty] = useState(location.state?.property || null);
+    const [loading, setLoading] = useState(!property);
+    const [isProcessing, setIsProcessing] = useState(false)
+    const [error, setError] = useState(null);
+    const [liked, setLiked] = useState(false);
+    const handleKhaltiPayment = async () => {
+        setIsProcessing(true)
+        const checkout = new KhaltiCheckout({
+            publicKey: "test_public_key_617c4c6fe77c441d88451ec1408a0c0e",
+            productIdentity: id,
+            productName: property.title,
+            productUrl: "http://localhost:3001",
+            eventHandler: {
+                onSuccess(payload) {
+                    console.log(payload)
+                    const data = {
+                        token: payload.token,
+                        amount: payload.price,
+                    }
+
+                    const config = {
+                        headers: { Authorization: "test_secret_key_3f78fb6364ef4bd1b5fc670ce33a06f5" },
+                    }
+
+                    axios
+                        .post("https://khalti.com/api/v2/payment/verify/", data, config)
+                        .then((response) => {
+                            console.log(response.data)
+                            setIsProcessing(false)
+                        })
+                        .catch((error) => {
+                            console.log(error)
+                            setIsProcessing(false)
+                        })
+                },
+                onError(error) {
+                    console.log(error)
+                    setIsProcessing(false)
+                },
+                onClose() {
+                    console.log("widget is closing")
+                    setIsProcessing(false)
+                },
+            },
+            paymentPreference: ["KHALTI", "EBANKING", "MOBILE_BANKING", "CONNECT_IPS", "SCT"],
+        })
+        checkout.show({ amount: property.price * 100 })
+    }
+
+    // State to control the visibility of the Landlord Manage Availability Modal
+    const [showManageAvailabilityModal, setShowManageAvailabilityModal] = useState(false);
+
+    // Integrate the useBookingModal hook for tenant booking
+    const {
+        showBookingModal,
+        handleOpenBookingModal,
+        handleCloseBookingModal,
+        selectedDate,
+        handleDateChange,
+        currentDaySlots,
+        selectedTime,
+        handleSlotSelect,
+        handleConfirmBooking,
+        loadingAvailability,
+        isBookingLoading,
+        bookingSuccess,
+        availableSlots
+    } = useBookingModal(id, property?.landlord?._id, isAuthenticated);
+
+    const [currentMediaIndex, setCurrentMediaIndex] = useState(location.state?.initialMediaIndex || 0);
+
+    const allMedia = useMemo(() => {
+        if (!property) return [];
+        return [
+            ...(property.images || []).map(img => `${API_BASE_URL}/${img}`),
+            ...(property.videos || []).map(vid => `${API_BASE_URL}/${vid}`)
+        ];
+    }, [property]);
+
+    // Fetch property details if not already passed via location state
+    useEffect(() => {
+        if (!property && id) {
+            getOnePropertyApi(id).then(res => {
+                setProperty(res.data.data);
+                setLoading(false);
+                setCurrentMediaIndex(0); // Reset media index on new property load
+            }).catch(() => {
+                setError('Failed to load property.');
+                setLoading(false);
+            });
+        }
+    }, [id, property]);
+
+    // Check if property is liked by the current user
+    useEffect(() => {
+        if (isAuthenticated && property?._id) {
+            getCartApi().then(res => {
+                const likedIds = res.data.data?.items?.map(i => i.property?._id);
+                setLiked(likedIds?.includes(property._id));
+            }).catch(err => {
+                console.error("Failed to fetch cart for like check:", err);
+                setLiked(false);
+            });
+        } else {
+            setLiked(false);
+        }
+    }, [property, isAuthenticated]);
+
+    // Toggle property like status (add/remove from cart)
+    const handleToggleLike = () => {
+        if (!isAuthenticated) return toast.warn('Login to save properties.');
+        if (!property?._id) return toast.error('Invalid property ID.');
+
+        const action = liked ? removeFromCartApi : addToCartApi;
+        action(property._id).then(() => {
+            setLiked(!liked);
+            toast.success(liked ? 'Removed from cart.' : 'Added to cart.');
+        }).catch(err => toast.error(err.response?.data?.message || 'Action failed.'));
+    };
+
+    // Open Gmail compose window
+    const openGmailCompose = (email) => {
+        if (email) {
+            const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`;
+            window.open(gmailComposeUrl, '_blank');
+        } else {
+            toast.error('No email address available to compose.');
+        }
+    };
+
+    // Handle payment (placeholder)
+    const handlePayment = () => {
+        console.log(property)
+        if (!isAuthenticated) {
+            toast.warn('Please log in to make a payment.');
+            return;
+        }
+        if (!property?._id) {
+            toast.error('Property details are missing for payment.');
+            return;
+        }
+        handleKhaltiPayment();
+
+        // toast.success(`Proceeding to payment for ${property.title} (Rs. ${property.price.toLocaleString()})`);
+    };
+
+    // Handle chat with landlord (navigate to chat page)
+    const handleChatLandlord = () => {
+        if (!isAuthenticated) {
+            toast.warn('Please log in to chat with the landlord.');
+            return;
+        }
+        if (!property?.landlord?._id) {
+            toast.error('Landlord information is missing. Cannot start chat.');
+            return;
+        }
+
+        navigate('/chat', {
+            state: {
+                recipientId: property.landlord._id,
+                recipientName: property.landlord.fullName || 'Landlord',
+                propertyName: property.title,
+                propertyId: property._id,
+            }
+        });
+    };
+
+    // Check if a URL points to a video file
+    const isVideo = url => /\.(mp4|webm|ogg|mov)$/i.test(url);
+
+    // Navigation for media gallery
+    const nextMedia = () => {
+        setCurrentMediaIndex(prevIndex => Math.min(prevIndex + 1, allMedia.length - 1));
+    };
+
+    const prevMedia = () => {
+        setCurrentMediaIndex(prevIndex => Math.max(prevIndex - 1, 0));
+    };
+
+    const mainMedia = allMedia[currentMediaIndex] || null;
+
+    // Loading and error states
+    if (loading || isLoadingAuth) return <div className="flex justify-center items-center h-screen bg-gray-50">Loading...</div>;
+    if (error) return <div className="text-red-500 text-xl p-4">{error}</div>;
+    if (!property) return <div className="text-yellow-600">No property found.</div>;
+
+    // Check if the current user is the owner (landlord) of this property
+    const isOwner = isAuthenticated && user?.role === 'Landlord' && user?._id === property.landlord?._id;
+
+    // Handlers for the Landlord Manage Availability Modal
+    const handleOpenManageAvailabilityModal = () => {
+        // Basic checks before opening the modal
+        if (!isAuthenticated) {
+            toast.warn('Please log in to manage availability.');
+            return;
+        }
+        if (user?.role !== 'Landlord') {
+            toast.error('Access denied. Landlord role required to manage availability.');
+            return;
+        }
+        if (user?._id !== property.landlord?._id) {
+            toast.error('You do not own this property to manage its availability.');
+            return;
+        }
+        setShowManageAvailabilityModal(true);
+    };
+
+    const handleCloseManageAvailabilityModal = () => {
+        setShowManageAvailabilityModal(false);
+    };
+
+    return (
+        <div className="min-h-screen bg-[#e6f0ff] py-10 px-4">
+            <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+                {/* Property Title and Like Button */}
+                <div className="p-8 border-b border-gray-200 flex justify-between items-center">
+                    <h1 className="text-4xl font-extrabold text-[#003366]">{property.title}</h1>
+                    <button onClick={handleToggleLike} className="p-3 rounded-full bg-gray-100 hover:bg-red-100">
+                        {liked ? <FaHeart className="text-red-500 text-3xl" /> : <FiHeart className="text-gray-400 text-3xl" />}
+                    </button>
+                </div>
+
+                {/* Media Gallery */}
+                <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Media Viewer */}
+                    <div className="lg:col-span-2 bg-gray-100 rounded-2xl flex justify-center items-center aspect-video relative">
+                        {mainMedia && (isVideo(mainMedia) ? <video src={mainMedia} controls className="w-full h-full object-cover rounded-2xl" /> : <img src={mainMedia} alt={property.title} className="w-full h-full object-cover rounded-2xl" />)}
+                        {!mainMedia && <div className="text-gray-400">No media available</div>}
+
+                        {allMedia.length > 1 && (
+                            <>
+                                <button onClick={prevMedia} disabled={currentMediaIndex === 0} className="absolute top-1/2 left-4 -translate-y-1/2 bg-white bg-opacity-75 rounded-full p-2 hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <ChevronLeft size={32} />
+                                </button>
+                                <button onClick={nextMedia} disabled={currentMediaIndex === allMedia.length - 1} className="absolute top-1/2 right-4 -translate-y-1/2 bg-white bg-opacity-75 rounded-full p-2 hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <ChevronRight size={32} />
+                                </button>
+                            </>
+                        )}
+                        {allMedia.length > 0 && (
+                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-60 text-white text-sm py-1 px-3 rounded-full">
+                                {currentMediaIndex + 1} / {allMedia.length}
+                            </div>
+                        )}
+                    </div>
+                    {/* Media Thumbnails */}
+                    <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">
+                        {allMedia.length > 0 ? (
+                            allMedia.map((mediaUrl, i) => (
+                                <div key={i} onClick={() => setCurrentMediaIndex(i)} className={`relative cursor-pointer rounded-xl border-2 overflow-hidden aspect-video transition-all ${currentMediaIndex === i ? 'border-[#003366] ring-2 ring-[#003366]' : 'border-gray-200 hover:border-gray-400'}`}>
+                                    {isVideo(mediaUrl) ? (
+                                        <video src={mediaUrl} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <img src={mediaUrl} alt={`Thumbnail ${i}`} className="w-full h-full object-cover" />
+                                    )}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-2 text-center text-gray-500">No images or videos available.</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Property Overview and Description */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8 border-t border-gray-200">
+                    <div className="md:col-span-2">
+                        <h2 className="text-2xl font-bold text-[#003366] mb-4">Overview</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-gray-700">
+                            <div className="flex items-center gap-2 bg-[#e6f0ff] p-3 rounded-lg">
+                                <Home size={20} className="text-[#003366]" /> Category: {property.categoryId?.category_name || 'N/A'}
+                            </div>
+                            <div className="flex items-center gap-2 bg-[#e6f0ff] p-3 rounded-lg">
+                                <MapPin size={20} className="text-[#003366]" /> Location: {property.location}
+                            </div>
+                            <div className="flex items-center gap-2 bg-[#e6f0ff] p-3 rounded-lg">
+                                <DollarSign size={20} className="text-[#003366]" /> Rs. {property.price.toLocaleString()}
+                            </div>
+                            <div className="flex items-center gap-2 bg-[#e6f0ff] p-3 rounded-lg">
+                                <Maximize2 size={20} className="text-[#003366]" /> Bedrooms: {property.bedrooms || 'N/A'}
+                            </div>
+                            <div className="flex items-center gap-2 bg-[#e6f0ff] p-3 rounded-lg">
+                                <Maximize2 size={20} className="text-[#003366]" /> Bathrooms: {property.bathrooms || 'N/A'}
+                            </div>
+                            <div className="flex items-center gap-2 bg-[#e6f0ff] p-3 rounded-lg">
+                                <CalendarIcon size={20} className="text-[#003366]" /> Listed On: {new Date(property.createdAt).toLocaleDateString()}
+                            </div>
+                        </div>
+
+                        <h2 className="text-2xl font-bold text-[#003366] mt-8 mb-4">Description</h2>
+                        <p className="text-gray-700">{property.description || 'No description provided.'}</p>
+                    </div>
+
+                    {/* Contact Landlord and Action Buttons */}
+                    <div className="bg-[#e6f0ff] p-6 rounded-xl text-center">
+                        <h2 className="text-xl font-bold text-[#003366] mb-4">Contact Landlord</h2>
+                        <User size={40} className="text-[#003366] mb-3" />
+                        <p className="font-semibold text-[#003366]">{property.landlord?.fullName || 'N/A'}</p>
+
+                        <div className="mt-4 space-y-3">
+                            <button
+                                onClick={() => openGmailCompose(property.landlord?.email)}
+                                className="w-full border border-[#6699cc] text-[#003366] py-2 rounded hover:bg-[#cce0ff]"
+                            >
+                                <Mail size={20} className="inline-block mr-2" /> {property.landlord?.email || 'N/A'}
+                            </button>
+                            {property.landlord?.contactNumber ? (
+                                <button onClick={() => copyToClipboard(property.landlord.contactNumber, 'Phone number copied!')} className="w-full border border-[#6699cc] text-[#003366] py-2 rounded hover:bg-[#cce0ff]">
+                                    <Phone size={20} className="inline-block mr-2" /> {property.landlord.contactNumber}
+                                </button>
+                            ) : (
+                                <p className="text-gray-500 text-sm italic">Contact number not available.</p>
+                            )}
+                            {property.landlord?._id && (
+                                <button
+                                    onClick={handleChatLandlord}
+                                    className="w-full border border-[#6699cc] text-[#003366] py-2 rounded hover:bg-[#cce0ff] flex items-center justify-center font-bold"
+                                >
+                                    <MessageSquare size={20} className="mr-2" /> Chat with Landlord
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Payment Button */}
+                        <button
+                            onClick={handlePayment}
+                            className="mt-6 w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center font-bold shadow-md transform hover:scale-105 transition-all duration-200"
+                        >
+                            <CreditCard size={24} className="mr-3" /> Make Payment
+                        </button>
+
+                        {/* Conditional Calendar Button: opens appropriate modal based on user role */}
+                        {isOwner ? (
+                            // Landlord owns this property - opens Manage Availability Modal
+                            <button
+                                onClick={handleOpenManageAvailabilityModal}
+                                className="mt-4 w-full py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] flex items-center justify-center font-bold shadow-md transform hover:scale-105 transition-all duration-200"
+                            >
+                                <CalendarIcon size={24} className="mr-3" /> <span>Manage Availability</span>
+                            </button>
+                        ) : (
+                            // Tenant or other user - opens Book a Visit Modal
+                            <button
+                                onClick={handleOpenBookingModal}
+                                className="mt-4 w-full py-3 bg-[#003366] text-white rounded-lg hover:bg-[#002244] flex items-center justify-center font-bold shadow-md transform hover:scale-105 transition-all duration-200"
+                            >
+                                <CalendarIcon size={24} className="mr-3" /> <span>Book a Visit</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <footer className="bg-[#003366] text-white text-center py-4 rounded-b-3xl">
+                    <p>&copy; {new Date().getFullYear()} DreamDwell. All rights reserved.</p>
+                </footer>
+            </div>
+            {/* The main ToastContainer for the page can remain here (or be moved to App.jsx if preferred) */}
+            <ToastContainer position="bottom-right" autoClose={3000} />
+
+            {/* Booking Modal Component (for tenants) */}
+            {property && ( // Only render if property data is loaded
+                <BookingModal
+                    show={showBookingModal}
+                    onClose={handleCloseBookingModal}
+                    propertyTitle={property.title}
+                    propertyId={property._id}
+                    landlordId={property.landlord?._id}
+                    isAuthenticated={isAuthenticated}
+                    selectedDate={selectedDate}
+                    handleDateChange={handleDateChange}
+                    currentDaySlots={currentDaySlots}
+                    selectedTime={selectedTime}
+                    handleSlotSelect={handleSlotSelect}
+                    handleConfirmBooking={handleConfirmBooking}
+                    loadingAvailability={loadingAvailability}
+                    isBookingLoading={isBookingLoading}
+                    bookingSuccess={bookingSuccess}
+                    availableSlots={availableSlots}
+                />
+            )}
+
+            {/* Landlord Manage Availability Modal Component (for landlords) */}
+            {property && ( // Only render if property data is loaded
+                <LandlordManageAvailabilityModal
+                    show={showManageAvailabilityModal}
+                    onClose={handleCloseManageAvailabilityModal}
+                    propertyId={property._id}
+                />
+            )}
+        </div>
+    );
+}
