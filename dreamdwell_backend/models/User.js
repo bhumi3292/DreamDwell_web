@@ -27,10 +27,10 @@ const userSchema = new mongoose.Schema({
         required: true,
         minlength: 8
     },
-    // profilePicture: {
-    //     type: String,
-    //     default: null
-    // }
+    profilePicture: {
+        type: String,
+        default: null
+    }
 }, { timestamps: true });
 
 // --- Mongoose Middleware to Hash Password Before Saving ---

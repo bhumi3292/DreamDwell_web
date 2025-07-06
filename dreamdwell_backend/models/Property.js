@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const propertySchema = new mongoose.Schema({
     images: {
         type: [String],
-        required: false, // will be handled by controller
+        required: true, // will be handled by controller
     },
     videos: {
         type: [String],
