@@ -7,6 +7,7 @@ export default function mainLayout() {
         <div>
             <Headers/>
             <Outlet/>
+
         </div>
 
     )
