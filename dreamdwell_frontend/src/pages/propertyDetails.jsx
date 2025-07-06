@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useContext, useMemo } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { getOnePropertyApi } from '../api/propertyApi';
-import KhaltiCheckout from 'Khalti-Checkout-web';
 import { addToCartApi, removeFromCartApi, getCartApi } from '../api/cartApi';
 import { FaHeart } from 'react-icons/fa';
 import { FiHeart } from 'react-icons/fi';
@@ -12,11 +11,11 @@ import 'react-toastify/dist/ReactToastify.css';
 import { MapPin, Maximize2, Phone, Mail, Home, DollarSign, User, ChevronLeft, ChevronRight, CreditCard, Calendar as CalendarIcon, MessageSquare } from 'lucide-react';
 
 import { useBookingModal } from '../hooks/useBookingHook.js';
+import { useKhaltiPayment } from '../hooks/payment/useKhaltiPayment.js';
 import BookingModal from '../components/bookingComponents.jsx';
 import LandlordManageAvailabilityModal from '../components/LandlordManageAvailabilityModal.jsx';
-import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+import { getFullMediaUrl } from '../utils/mediaUrlHelper.js'; // Import the new media URL helper
 
 
 
@@ -33,54 +32,16 @@ export default function PropertyDetail() {
 
     const [property, setProperty] = useState(location.state?.property || null);
     const [loading, setLoading] = useState(!property);
-    const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState(null);
     const [liked, setLiked] = useState(false);
-    const handleKhaltiPayment = async () => {
-        setIsProcessing(true)
-        const checkout = new KhaltiCheckout({
-            publicKey: "test_public_key_617c4c6fe77c441d88451ec1408a0c0e",
-            productIdentity: id,
-            productName: property.title,
-            productUrl: "http://localhost:3001",
-            eventHandler: {
-                onSuccess(payload) {
-                    console.log(payload)
-                    const data = {
-                        token: payload.token,
-                        amount: payload.price,
-                    }
 
-                    const config = {
-                        headers: { Authorization: "test_secret_key_3f78fb6364ef4bd1b5fc670ce33a06f5" },
-                    }
+    // Use the Khalti payment hook
+    const { initiateKhaltiPayment, isProcessingPayment, paymentSuccess, paymentError } = useKhaltiPayment(
+        property?._id,
+        property?.title,
+        property?.price
+    );
 
-                    axios
-                        .post("https://khalti.com/api/v2/payment/verify/", data, config)
-                        .then((response) => {
-                            console.log(response.data)
-                            setIsProcessing(false)
-                        })
-                        .catch((error) => {
-                            console.log(error)
-                            setIsProcessing(false)
-                        })
-                },
-                onError(error) {
-                    console.log(error)
-                    setIsProcessing(false)
-                },
-                onClose() {
-                    console.log("widget is closing")
-                    setIsProcessing(false)
-                },
-            },
-            paymentPreference: ["KHALTI", "EBANKING", "MOBILE_BANKING", "CONNECT_IPS", "SCT"],
-        })
-        checkout.show({ amount: property.price * 100 })
-    }
-
-    // State to control the visibility of the Landlord Manage Availability Modal
     const [showManageAvailabilityModal, setShowManageAvailabilityModal] = useState(false);
 
     // Integrate the useBookingModal hook for tenant booking
@@ -102,11 +63,12 @@ export default function PropertyDetail() {
 
     const [currentMediaIndex, setCurrentMediaIndex] = useState(location.state?.initialMediaIndex || 0);
 
+    // Use the getFullMediaUrl helper for media paths
     const allMedia = useMemo(() => {
         if (!property) return [];
         return [
-            ...(property.images || []).map(img => `${API_BASE_URL}/${img}`),
-            ...(property.videos || []).map(vid => `${API_BASE_URL}/${vid}`)
+            ...(property.images || []).map(img => getFullMediaUrl(img)),
+            ...(property.videos || []).map(vid => getFullMediaUrl(vid))
         ];
     }, [property]);
 
@@ -161,23 +123,19 @@ export default function PropertyDetail() {
         }
     };
 
-    // Handle payment (placeholder)
+    // Handle payment
     const handlePayment = () => {
-        console.log(property)
         if (!isAuthenticated) {
             toast.warn('Please log in to make a payment.');
             return;
         }
-        if (!property?._id) {
-            toast.error('Property details are missing for payment.');
+        if (!property?._id || !property?.price || property.price <= 0) {
+            toast.error('Property details are missing or price is invalid for payment.');
             return;
         }
-        handleKhaltiPayment();
-
-        // toast.success(`Proceeding to payment for ${property.title} (Rs. ${property.price.toLocaleString()})`);
+        initiateKhaltiPayment();
     };
 
-    // Handle chat with landlord (navigate to chat page)
     const handleChatLandlord = () => {
         if (!isAuthenticated) {
             toast.warn('Please log in to chat with the landlord.');
@@ -212,17 +170,13 @@ export default function PropertyDetail() {
 
     const mainMedia = allMedia[currentMediaIndex] || null;
 
-    // Loading and error states
     if (loading || isLoadingAuth) return <div className="flex justify-center items-center h-screen bg-gray-50">Loading...</div>;
     if (error) return <div className="text-red-500 text-xl p-4">{error}</div>;
     if (!property) return <div className="text-yellow-600">No property found.</div>;
 
-    // Check if the current user is the owner (landlord) of this property
     const isOwner = isAuthenticated && user?.role === 'Landlord' && user?._id === property.landlord?._id;
 
-    // Handlers for the Landlord Manage Availability Modal
     const handleOpenManageAvailabilityModal = () => {
-        // Basic checks before opening the modal
         if (!isAuthenticated) {
             toast.warn('Please log in to manage availability.');
             return;
@@ -253,7 +207,6 @@ export default function PropertyDetail() {
                     </button>
                 </div>
 
-                {/* Media Gallery */}
                 <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Media Viewer */}
                     <div className="lg:col-span-2 bg-gray-100 rounded-2xl flex justify-center items-center aspect-video relative">
@@ -356,9 +309,11 @@ export default function PropertyDetail() {
                         {/* Payment Button */}
                         <button
                             onClick={handlePayment}
-                            className="mt-6 w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center font-bold shadow-md transform hover:scale-105 transition-all duration-200"
+                            disabled={isProcessingPayment} // Disable button while payment is processing
+                            className={`mt-6 w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center font-bold shadow-md transform hover:scale-105 transition-all duration-200 ${isProcessingPayment ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
-                            <CreditCard size={24} className="mr-3" /> Make Payment
+                            <CreditCard size={24} className="mr-3" />
+                            {isProcessingPayment ? 'Processing Payment...' : 'Make Payment'}
                         </button>
 
                         {/* Conditional Calendar Button: opens appropriate modal based on user role */}
@@ -386,11 +341,10 @@ export default function PropertyDetail() {
                     <p>&copy; {new Date().getFullYear()} DreamDwell. All rights reserved.</p>
                 </footer>
             </div>
-            {/* The main ToastContainer for the page can remain here (or be moved to App.jsx if preferred) */}
             <ToastContainer position="bottom-right" autoClose={3000} />
 
             {/* Booking Modal Component (for tenants) */}
-            {property && ( // Only render if property data is loaded
+            {property && (
                 <BookingModal
                     show={showBookingModal}
                     onClose={handleCloseBookingModal}
@@ -411,8 +365,7 @@ export default function PropertyDetail() {
                 />
             )}
 
-            {/* Landlord Manage Availability Modal Component (for landlords) */}
-            {property && ( // Only render if property data is loaded
+            {property && (
                 <LandlordManageAvailabilityModal
                     show={showManageAvailabilityModal}
                     onClose={handleCloseManageAvailabilityModal}
