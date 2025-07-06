@@ -199,20 +199,26 @@ exports.updateProperty = async (req, res) => {
 // --- DELETE PROPERTY ---
 exports.deleteProperty = async (req, res) => {
     try {
+        // Step 1: Find the property to be deleted
         const property = await Property.findById(req.params.id);
         if (!property) {
             return res.status(404).json({ success: false, message: "Property not found." });
         }
 
+        // Step 2: VERIFY OWNERSHIP. This is a critical security check.
+        // It prevents any authenticated user from deleting a property they don't own.
         if (property.landlord.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, message: "Unauthorized access: You do not own this property." });
         }
 
+        // Step 3: Get all file paths associated with the property before deletion
         const allFilesToDelete = [...property.images, ...property.videos];
 
-
+        // Step 4: Delete the property from the database
+        // We use property.deleteOne() after finding it, so we have access to the file paths.
         await property.deleteOne();
 
+        // Step 5: Delete the corresponding files from the filesystem
         await deleteFiles(allFilesToDelete);
 
         res.status(200).json({ success: true, message: "Property deleted successfully!" });
