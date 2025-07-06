@@ -1,7 +1,5 @@
-// Inside src/auth/authProvider.jsx
-
+// src/auth/AuthProvider.jsx
 import { createContext, useState, useEffect } from "react";
-
 
 export const AuthContext = createContext(null);
 
@@ -9,15 +7,15 @@ const AuthContextProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Handles user login: sets user data and token in state and localStorage
     const login = (userData, token) => {
         setLoading(true);
         try {
-            // Ensure userData passed here *already contains* the fullName property from your backend
-            localStorage.setItem("user", JSON.stringify(userData));
-            localStorage.setItem("token", token);
-            setUser(userData); // This is where the user state is updated
-            console.log("AuthContext: User logged in, setting user state to:", userData); // Debugging log
+            if (userData && token) {
+                localStorage.setItem("user", JSON.stringify(userData));
+                localStorage.setItem("token", token);
+                setUser(userData);
+                console.log("AuthContext: User logged in, setting user state to:", userData);
+            }
         } catch (error) {
             console.error("AuthContext: Failed to save user data to localStorage:", error);
         } finally {
@@ -25,13 +23,12 @@ const AuthContextProvider = ({ children }) => {
         }
     };
 
-    // Handles user logout
     const logout = () => {
         setLoading(true);
         localStorage.removeItem("user");
         localStorage.removeItem("token");
         setUser(null);
-        console.log("AuthContext: User logged out, user state set to null."); // Debugging log
+        console.log("AuthContext: User logged out, user state set to null.");
         setLoading(false);
     };
 
@@ -42,25 +39,22 @@ const AuthContextProvider = ({ children }) => {
 
         let parsedUser = null;
 
-        if (storedUserString && storedUserString !== "undefined") {
+        if (storedToken && storedToken !== "undefined" && storedUserString && storedUserString !== "undefined") {
             try {
                 parsedUser = JSON.parse(storedUserString);
-                console.log("AuthContext: Initial load, parsed user from localStorage:", parsedUser); // Debugging log
+                setUser(parsedUser);
+                console.log("AuthContext: Initial load, user and token found. Setting user state.");
             } catch (error) {
-
                 console.error("AuthContext: Error parsing user data from localStorage:", error);
                 localStorage.removeItem("user");
+                localStorage.removeItem("token");
+                setUser(null);
             }
-        }
-
-        if (storedToken && storedToken !== "undefined" && parsedUser) {
-            setUser(parsedUser);
-            console.log("AuthContext: Initial load, user and token found. Setting user state."); // Debugging log
         } else {
             setUser(null);
             localStorage.removeItem("user");
             localStorage.removeItem("token");
-            console.log("AuthContext: Initial load, no valid user/token found in localStorage."); // Debugging log
+            console.log("AuthContext: Initial load, no valid user/token found in localStorage.");
         }
 
         setLoading(false);

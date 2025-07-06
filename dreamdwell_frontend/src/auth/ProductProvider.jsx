@@ -1,4 +1,5 @@
-import { createContext, useState, useEffect, useContext } from "react";
+// src/product/ProductContextProvider.jsx
+import { createContext, useState, useEffect } from "react"; // Removed useContext
 
 export const ProductContext = createContext(null);
 
@@ -7,12 +8,10 @@ const ProductContextProvider = ({ children }) => {
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [error, setError] = useState(null);
 
-
     const fetchProducts = async () => {
         setLoadingProducts(true);
         setError(null);
         try {
-
             const response = await fetch('/api/products');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -34,7 +33,6 @@ const ProductContextProvider = ({ children }) => {
         setLoadingProducts(true); // Or use a separate loading state for adding
         setError(null);
         try {
-
             const addedProduct = { ...newProductData, id: Date.now() };
             setProducts(prevProducts => [...prevProducts, addedProduct]);
             console.log("ProductContext: Product added:", addedProduct);
@@ -53,21 +51,6 @@ const ProductContextProvider = ({ children }) => {
         setLoadingProducts(true);
         setError(null);
         try {
-            // Example: send updatedProductData to your backend
-            // const response = await fetch(`/api/products/${productId}`, {
-            //     method: 'PUT',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'Authorization': `Bearer ${token}`
-            //     },
-            //     body: JSON.stringify(updatedProductData),
-            // });
-
-            // if (!response.ok) {
-            //     throw new Error(`HTTP error! status: ${response.status}`);
-            // }
-            // const productAfterUpdate = await response.json();
-
             // For demonstration, simulate success
             const productAfterUpdate = { ...updatedProductData, id: productId };
             setProducts(prevProducts =>
@@ -89,7 +72,6 @@ const ProductContextProvider = ({ children }) => {
         setLoadingProducts(true);
         setError(null);
         try {
-
             setProducts(prevProducts => prevProducts.filter(p => p.id !== productId));
             console.log("ProductContext: Product deleted with ID:", productId);
         } catch (err) {
@@ -100,7 +82,6 @@ const ProductContextProvider = ({ children }) => {
             setLoadingProducts(false);
         }
     };
-
 
     // Fetch products when the component mounts
     useEffect(() => {
@@ -114,7 +95,6 @@ const ProductContextProvider = ({ children }) => {
                 loadingProducts,
                 error,
                 fetchProducts,
-
                 addProduct,
                 updateProduct,
                 deleteProduct,
