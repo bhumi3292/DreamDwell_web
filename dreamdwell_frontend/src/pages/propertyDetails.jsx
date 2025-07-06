@@ -18,7 +18,6 @@ import LandlordManageAvailabilityModal from '../components/LandlordManageAvailab
 import { getFullMediaUrl } from '../utils/mediaUrlHelper.js'; // Import the new media URL helper
 
 
-
 const copyToClipboard = (text, message) => {
     navigator.clipboard.writeText(text).then(() => toast.success(message)).catch(() => toast.error('Failed to copy.'));
 };
@@ -156,6 +155,20 @@ export default function PropertyDetail() {
         });
     };
 
+    // New handler for WhatsApp chat
+    const handleWhatsAppChat = (phoneNumber) => {
+        if (!phoneNumber) {
+            toast.error('Landlord phone number not available for WhatsApp chat.');
+            return;
+        }
+        // Format the phone number for WhatsApp (remove non-digits, ensure country code if needed)
+        // For example, if numbers are stored as "9813895837", you might need to prepend "977" for Nepal.
+        // Assuming your database number is ready for direct use or a default country code is implied.
+        const cleanedPhoneNumber = phoneNumber.replace(/\D/g, ''); // Remove all non-digit characters
+        const whatsappUrl = `https://web.whatsapp.com/send?phone=${cleanedPhoneNumber}`;
+        window.open(whatsappUrl, '_blank');
+    };
+
     // Check if a URL points to a video file
     const isVideo = url => /\.(mp4|webm|ogg|mov)$/i.test(url);
 
@@ -289,9 +302,12 @@ export default function PropertyDetail() {
                             >
                                 <Mail size={20} className="inline-block mr-2" /> {property.landlord?.email || 'N/A'}
                             </button>
-                            {property.landlord?.contactNumber ? (
-                                <button onClick={() => copyToClipboard(property.landlord.contactNumber, 'Phone number copied!')} className="w-full border border-[#6699cc] text-[#003366] py-2 rounded hover:bg-[#cce0ff]">
-                                    <Phone size={20} className="inline-block mr-2" /> {property.landlord.contactNumber}
+                            {property.landlord?.phoneNumber ? (
+                                <button
+                                    onClick={() => handleWhatsAppChat(property.landlord.phoneNumber)} // Changed onClick handler
+                                    className="w-full border border-[#6699cc] text-[#003366] py-2 rounded hover:bg-[#cce0ff] flex items-center justify-center font-bold"
+                                >
+                                    <Phone size={20} className="inline-block mr-2" /> WhatsApp: {property.landlord.phoneNumber} {/* Changed button text */}
                                 </button>
                             ) : (
                                 <p className="text-gray-500 text-sm italic">Contact number not available.</p>

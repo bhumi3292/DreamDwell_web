@@ -81,9 +81,10 @@ exports.createProperty = async (req, res) => {
 // --- GET ALL PROPERTIES ---
 exports.getAllProperties = async (req, res) => {
     try {
+        // Populate category and landlord details, including phoneNumber for landlord
         const properties = await Property.find({})
             .populate("categoryId", "category_name")
-            .populate("landlord", "fullName email");
+            .populate("landlord", "fullName email phoneNumber"); // Added phoneNumber here
 
         res.status(200).json({
             success: true,
@@ -99,9 +100,10 @@ exports.getAllProperties = async (req, res) => {
 // --- GET SINGLE PROPERTY ---
 exports.getOneProperty = async (req, res) => {
     try {
+        // Populate category and landlord details, including phoneNumber for landlord
         const property = await Property.findById(req.params.id)
             .populate("categoryId", "category_name")
-            .populate("landlord", "fullName email");
+            .populate("landlord", "fullName email phoneNumber"); // <-- FIX APPLIED HERE
 
         if (!property) {
             return res.status(404).json({ success: false, message: "Property not found" });
