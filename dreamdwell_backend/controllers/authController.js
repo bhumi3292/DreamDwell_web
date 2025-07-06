@@ -1,5 +1,5 @@
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { sendEmail } = require("../utils/sendEmail");
 
@@ -30,7 +30,7 @@ exports.registerUser = async (req, res) => {
             email,
             phoneNumber,
             role: stakeholder,
-            password // Pre-save hook will hash this
+            password
         });
 
         await newUser.save();
@@ -108,6 +108,25 @@ exports.findUserIdByCredentials = async (req, res) => {
         return res.status(500).json({ success: false, message: "Server error" });
     }
 };
+
+// ⭐ NEW: Get Current Authenticated User (for /api/auth/me) ⭐
+exports.getMe = async (req, res) => {
+    // The `authenticateUser` middleware (from authMiddleware.js)
+    // will have already verified the JWT and fetched the user from the database,
+    // attaching the user object (without password) to `req.user`.
+    if (!req.user) {
+        // This case should ideally not be reached if authenticateUser passed,
+        // but it's a good safeguard.
+        return res.status(401).json({ success: false, message: "User data not available after authentication." });
+    }
+
+    // Send the user data that was attached to the request by the middleware
+    return res.status(200).json({
+        success: true,
+        user: req.user, // req.user already contains the user details from the DB
+    });
+};
+
 
 // Send Password Reset Link
 exports.sendPasswordResetLink = async (req, res) => {
