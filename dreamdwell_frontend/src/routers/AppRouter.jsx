@@ -1,31 +1,36 @@
+// src/routers/AppRouter.jsx
 import React, { useContext } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthContext } from "../auth/AuthProvider.jsx";
 
-// Pages - Adjust paths as per your project structure
+// Import your page components
 import HomePage from "../pages/home.jsx";
 import RegisterPage from "../pages/signup.jsx";
 import LoginPage from "../pages/login.jsx";
-import ForgetPasswordPage from "../pages/ForgetPassword.jsx";
-import ResetPasswordWithTokenPage from "../pages/ResetPasswordWithToken.jsx";
+import ForgetPasswordPage from "../pages/RequestPassword.jsx";
+import ResetPasswordWithTokenPage from "../pages/ResetPassword.jsx";
 import AgreementPage from "../pages/agreement.jsx";
 import PropertyPage from "../pages/property.jsx";
 import AddPropertyPage from "../pages/add_property.jsx";
+import UpdatePropertyPage from "../pages/updatePropertyPage.jsx";
+import PropertyDetail from "../pages/propertyDetails.jsx";
+import CartPage from "../pages/cartProperty.jsx";
 
 
+const DashboardPage = () => <div className="p-4 text-xl">Welcome to the Dashboard! This is a protected page.</div>;
+const NotFoundPage = () => <div className="p-4 text-xl text-red-500">404 - Page Not Found</div>;
 
-// Placeholder for protected content (replace with your actual components)
-const DashboardPage = () => <div>Welcome to the Dashboard! This is a protected page.</div>;
-const NotFoundPage = () => <div>404 - Page Not Found</div>;
-
-// PrivateRoute component for protected routes
+// A wrapper component to protect routes
 const PrivateRoute = ({ children }) => {
     const { isAuthenticated, loading } = useContext(AuthContext);
 
+    // Show a loading state while authentication is being checked.
     if (loading) {
-        return <p>Loading application...</p>; // Or a spinner/loading component
+        return <div className="p-4 text-center text-gray-500">Loading application...</div>;
     }
-    return isAuthenticated ? children : <Navigate to="/login" />;
+
+    // Redirect to the login page if the user is not authenticated.
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 export default function AppRoutes() {
@@ -34,24 +39,45 @@ export default function AppRoutes() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<RegisterPage />} />
-
-            {/* Public routes for password reset flow */}
-            <Route path="/forgot-password" element={<ForgetPasswordPage />} /> {/* <<<-- Crucial: Path */}
+            <Route path="/forgot-password" element={<ForgetPasswordPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordWithTokenPage />} />
-
-            {/* Other public routes */}
             <Route path="/agreement" element={<AgreementPage />} />
             <Route path="/property" element={<PropertyPage />} />
-            <Route path="/add-property" element={<AddPropertyPage />} />
+            <Route path="/cart" element={<CartPage />} />
 
-            {/* Example Protected Route */}
-            <Route path="/dashboard" element={
-                <PrivateRoute>
-                    <DashboardPage />
-                </PrivateRoute>
-            } />
+            {/* Protected routes */}
+            <Route
+                path="/add-property"
+                element={
+                    <PrivateRoute>
+                        <AddPropertyPage />
+                    </PrivateRoute>
+                }
+            />
 
-            {/* Catch-all route for unmatched paths */}
+            <Route
+                path="/update-property/:id"
+                element={
+                    <PrivateRoute>
+                        <UpdatePropertyPage />
+                    </PrivateRoute>
+                }
+            />
+
+            <Route
+                path="/dashboard"
+                element={
+                    <PrivateRoute>
+                        <DashboardPage />
+                    </PrivateRoute>
+                }
+            />
+
+
+            {/* This route is not protected and can be accessed by anyone. */}
+            <Route path="/property/:id" element={<PropertyDetail />} />
+
+            {/* Catch-all route for 404 Not Found pages. */}
             <Route path="*" element={<NotFoundPage />} />
         </Routes>
     );
