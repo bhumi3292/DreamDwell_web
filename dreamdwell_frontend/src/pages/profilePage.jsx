@@ -8,13 +8,12 @@ import {
 } from "lucide-react";
 
 import Header from "../layouts/navbar";
-import Footer from "../layouts/footer";
+import Footer from "../layouts/footer"; // Assuming you still want the footer
 
 import { useUploadProfilePicture } from "../hooks/useAuthHooks";
 import { getCartService, removeFromCartService } from '../services/cartService.js';
 import { API_URL } from '../api/api.js';
 
-// ⭐ NEW IMPORTS: Your separate form components ⭐
 import UpdatePersonalInfoForm from '../components/profile/UpdatePersonalInfoForm'; // Adjust path if needed
 import ChangePasswordForm from '../components/profile/ChangePasswordForm'; // Adjust path if needed
 
@@ -31,18 +30,12 @@ export default function ProfilePage() {
         role: "User",
     });
 
-    // Removed personalInfoForm and passwordForm states from here,
-    // as they are now managed within their respective components.
-
     const [savedProperties, setSavedProperties] = useState([]);
     const [loadingSavedProperties, setLoadingSavedProperties] = useState(false);
     const [errorSavedProperties, setErrorSavedProperties] = useState(null);
 
     const fileInputRef = useRef(null);
     const { mutate: uploadPicture, isLoading: isUploading } = useUploadProfilePicture();
-
-    // Removed useUpdateProfile and useChangePassword hooks from here,
-    // as they are now managed within their respective components.
 
     useEffect(() => {
         if (user) {
@@ -57,7 +50,6 @@ export default function ProfilePage() {
                 joinDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A",
                 role: user.role || "User",
             }));
-            // No need to set personalInfoForm here anymore
         }
     }, [user]);
 
@@ -135,9 +127,6 @@ export default function ProfilePage() {
             console.error(err);
         }
     };
-
-    // Removed handlePersonalInfoChange, handlePersonalInfoSubmit,
-    // handlePasswordChange, handleChangePasswordSubmit from here.
 
     const getSidebarButtonClasses = (tabName) => {
         const baseClasses = "w-full flex items-center px-4 py-3 rounded-lg text-base font-medium transition-colors duration-200";
@@ -260,15 +249,7 @@ export default function ProfilePage() {
                                 <Heart className="h-5 w-5 mr-3" />
                                 Saved Properties
                             </button>
-                            <button
-                                type="button"
-                                className={getSidebarButtonClasses("rental-history")}
-                                onClick={() => setActiveTab("rental-history")}
-                                aria-current={activeTab === "rental-history" ? "page" : undefined}
-                            >
-                                <Clock className="h-5 w-5 mr-3" />
-                                Rental History
-                            </button>
+                            {/* REMOVED: Rental History button */}
                             <button
                                 type="button"
                                 className={getSidebarButtonClasses("messages")}
@@ -278,15 +259,7 @@ export default function ProfilePage() {
                                 <MessageCircle className="h-5 w-5 mr-3" />
                                 Messages
                             </button>
-                            <button
-                                type="button"
-                                className={getSidebarButtonClasses("payments")}
-                                onClick={() => setActiveTab("payments")}
-                                aria-current={activeTab === "payments" ? "page" : undefined}
-                            >
-                                <CreditCard className="h-5 w-5 mr-3" />
-                                Payments
-                            </button>
+                            {/* REMOVED: Payments button */}
                             <button
                                 type="button"
                                 className={getSidebarButtonClasses("notifications")}
@@ -406,17 +379,15 @@ export default function ProfilePage() {
                             </>
                         )}
 
+                        {/* REMOVED: The content for rental-history and payments placeholders */}
+                        {/* activeTab === "rental-history" is now implicitly handled by the lack of a button */}
+                        {/* activeTab === "payments" is now implicitly handled by the lack of a button */}
+
                         {activeTab === "applications" && (
                             <h2 className="text-3xl font-bold text-gray-800 mb-6">My Applications (Placeholder)</h2>
                         )}
-                        {activeTab === "rental-history" && (
-                            <h2 className="text-3xl font-bold text-gray-800 mb-6">Rental History (Placeholder)</h2>
-                        )}
                         {activeTab === "messages" && (
                             <h2 className="text-3xl font-bold text-gray-800 mb-6">My Messages (Placeholder)</h2>
-                        )}
-                        {activeTab === "payments" && (
-                            <h2 className="text-3xl font-bold text-gray-800 mb-6">Payment History (Placeholder)</h2>
                         )}
                         {activeTab === "notifications" && (
                             <h2 className="text-3xl font-bold text-gray-800 mb-6">Notifications (Placeholder)</h2>
@@ -428,7 +399,7 @@ export default function ProfilePage() {
                     </main>
                 </div>
             </div>
-
+            {/* If you want the footer, keep this line */}
             <Footer />
         </div>
     );
