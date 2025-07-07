@@ -1,12 +1,6 @@
 // src/api/calendarApi.js
 import api from './api'; // IMPORTANT: Ensure this path correctly points to your centralized axios instance (src/api/api.js)
 
-/**
- * Fetches available time slots for a specific property on a given date.
- * @param {string} propertyId The ID of the property.
- * @param {string} date The date in YYYY-MM-DD format (e.g., '2025-07-10').
- * @returns {Promise<Array<string>>} A promise that resolves to an array of available time slots.
- */
 export const getAvailableSlotsForPropertyApi = async (propertyId, date) => {
     try {
         const response = await api.get(`/api/calendar/properties/${propertyId}/available-slots`, {
@@ -20,14 +14,6 @@ export const getAvailableSlotsForPropertyApi = async (propertyId, date) => {
     }
 };
 
-/**
- * Books a visit for a property.
- * @param {object} bookingDetails - Details for the booking.
- * @param {string} bookingDetails.propertyId - The ID of the property.
- * @param {string} bookingDetails.date - The date of the visit (YYYY-MM-DD).
- * @param {string} bookingDetails.timeSlot - The selected time slot.
- * @returns {Promise<object>} A promise that resolves to the booking confirmation.
- */
 export const bookVisitApi = async ({ propertyId, date, timeSlot }) => {
     try {
         const response = await api.post('/api/calendar/book-visit', {
@@ -73,10 +59,6 @@ export const cancelBookingApi = async (bookingId) => {
     }
 };
 
-/**
- * Fetches all availabilities created by the current authenticated landlord.
- * @returns {Promise<Array<object>>} A promise that resolves to an array of landlord availabilities.
- */
 export const getLandlordAvailabilitiesApi = async () => {
     try {
         const response = await api.get('/api/calendar/landlord/availabilities');
@@ -87,15 +69,6 @@ export const getLandlordAvailabilitiesApi = async () => {
     }
 };
 
-/**
- * Creates or updates a landlord's availability for a property on a specific date.
- * @param {object} availabilityDetails - Details for the availability.
- * @param {string} availabilityDetails.propertyId - The ID of the property.
- * @param {string} availabilityDetails.date - The date in YYYY-MM-DD format.
- * @param {Array<string>} availabilityDetails.timeSlots - An array of time slots.
- * @param {string} [availabilityId] - Optional. If provided, updates an existing availability.
- * @returns {Promise<object>} A promise that resolves to the created/updated availability.
- */
 export const upsertAvailabilityApi = async ({ propertyId, date, timeSlots }, availabilityId = null) => {
     try {
         let response;
@@ -111,11 +84,6 @@ export const upsertAvailabilityApi = async ({ propertyId, date, timeSlots }, ava
     }
 };
 
-/**
- * Deletes a landlord's availability entry.
- * @param {string} availabilityId The ID of the availability entry to delete.
- * @returns {Promise<object>} A promise that resolves to the deletion confirmation.
- */
 export const deleteAvailabilityApi = async (availabilityId) => {
     try {
         const response = await api.delete(`/api/calendar/availabilities/${availabilityId}`);
@@ -126,10 +94,6 @@ export const deleteAvailabilityApi = async (availabilityId) => {
     }
 };
 
-/**
- * Fetches all bookings for the current authenticated landlord's properties.
- * @returns {Promise<Array<object>>} A promise that resolves to an array of landlord's property bookings.
- */
 export const getLandlordBookingsApi = async () => {
     try {
         const response = await api.get('/api/calendar/landlord/bookings');
@@ -140,12 +104,6 @@ export const getLandlordBookingsApi = async () => {
     }
 };
 
-/**
- * Updates the status of a booking (e.g., 'confirmed', 'cancelled').
- * @param {string} bookingId The ID of the booking to update.
- * @param {string} status The new status ('confirmed', 'cancelled', 'completed', 'rescheduled').
- * @returns {Promise<object>} A promise that resolves to the updated booking.
- */
 export const updateBookingStatusApi = async (bookingId, status) => {
     try {
         const response = await api.put(`/api/calendar/bookings/${bookingId}/status`, { status });

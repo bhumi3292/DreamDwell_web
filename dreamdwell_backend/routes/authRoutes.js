@@ -4,7 +4,6 @@ const router = express.Router();
 const authController = require("../controllers/authController");
 const { authenticateUser } = require("../middlewares/auth"); // Assuming this path is correct
 
-// ⭐ NEW IMPORTS FOR FILE UPLOAD ⭐
 const multer = require('multer');
 const path = require('path');
 const User = require('../models/User'); // Import your User model here
@@ -12,11 +11,9 @@ const User = require('../models/User'); // Import your User model here
 // Configure Multer storage
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        // The 'uploads/' directory should be at the root of your project
         cb(null, 'uploads/');
     },
     filename: function (req, file, cb) {
-        // Generate a unique filename: fieldname-timestamp.ext
         cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
     }
 });

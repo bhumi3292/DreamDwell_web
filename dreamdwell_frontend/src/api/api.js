@@ -2,17 +2,15 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// ⭐ CHANGE HERE: Export API_URL ⭐
 export const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 const instance = axios.create({
-    baseURL: API_URL, // Use the exported API_URL here
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Request interceptor to add the JWT token
 instance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -26,7 +24,6 @@ instance.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle 401 Unauthorized
 instance.interceptors.response.use(
     (response) => response,
     (error) => {

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { KeyRound } from "lucide-react";
-import { useChangePassword } from "../../hooks/useAuthHooks"; // Adjust path as needed
+import { useChangePassword } from "../../hooks/useAuthHooks";
 
 export default function ChangePasswordForm() {
     const [passwordForm, setPasswordForm] = useState({

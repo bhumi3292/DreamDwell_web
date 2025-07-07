@@ -1,4 +1,4 @@
-// import statements remain the same as you provided
+// src/components/Navbar.jsx
 import React, { useState, useContext, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
@@ -43,6 +43,7 @@ export default function Navbar() {
                 if (cartData && Array.isArray(cartData.items)) {
                     setCartCount(cartData.items.length);
                 } else if (cartData && cartData.items && typeof cartData.items === 'object') {
+                    // This case handles if items might be an object (e.g., {itemId: quantity})
                     setCartCount(Object.keys(cartData.items).length);
                 } else {
                     setCartCount(0);
@@ -57,19 +58,19 @@ export default function Navbar() {
     }, [isAuthenticated, user]);
 
 
-    if (loading) return null;
+    if (loading) return null; // Or show a loading spinner/skeleton if desired
 
     const handleLogout = () => {
         logout();
         toast.info("You've been logged out successfully!");
-        setMenuOpen(false);
-        setProfileMenuOpen(false);
+        setMenuOpen(false); // Close mobile menu
+        setProfileMenuOpen(false); // Close profile dropdown
         navigate("/login");
     };
 
     const handlePropertyClick = (e) => {
-        e.preventDefault();
-        setMenuOpen(false);
+        e.preventDefault(); // Prevent default link behavior
+        setMenuOpen(false); // Close mobile menu
         if (user) {
             navigate("/property");
         } else {
@@ -79,7 +80,7 @@ export default function Navbar() {
     };
 
     const handleCartClick = () => {
-        setMenuOpen(false);
+        setMenuOpen(false); // Close mobile menu
         navigate("/cart");
     };
 
@@ -88,8 +89,8 @@ export default function Navbar() {
     };
 
     const handleProfileMenuItemClick = (path) => {
-        setProfileMenuOpen(false);
-        setMenuOpen(false);
+        setProfileMenuOpen(false); // Close profile dropdown
+        setMenuOpen(false); // Close mobile menu
         navigate(path);
     };
 
@@ -109,7 +110,7 @@ export default function Navbar() {
                 </button>
             </div>
 
-            {/* Navigation Links (unchanged) */}
+            {/* Navigation Links */}
             <div
                 className={`${
                     menuOpen ? "flex" : "hidden"
@@ -119,8 +120,9 @@ export default function Navbar() {
                     Home
                 </Link>
 
+                {/* Using <a> tag with onClick for conditional navigation based on login */}
                 <a
-                    href="/property"
+                    href="/property" // Keep href for accessibility/SEO, but handle click with JS
                     onClick={handlePropertyClick}
                     className="text-lg font-medium hover:text-blue-300"
                 >
@@ -146,7 +148,7 @@ export default function Navbar() {
 
             {/* Cart, Profile, Auth Buttons */}
             <div className="hidden md:flex items-center gap-6">
-                {/* Cart icon with count (unchanged) */}
+                {/* Cart icon with count */}
                 <div
                     className="relative cursor-pointer"
                     onClick={handleCartClick}
@@ -179,13 +181,14 @@ export default function Navbar() {
                     {isAuthenticated && profileMenuOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-white text-[#002B5B] rounded-md shadow-lg py-1 z-10">
                             <button
-                                onClick={() => handleProfileMenuItemClick("/profile")} // --- THIS IS THE KEY CHANGE ---
+                                onClick={() => handleProfileMenuItemClick("/profile")}
                                 className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                             >
                                 My Profile
                             </button>
+                            {/* Corrected path for Bookings */}
                             <button
-                                onClick={() => handleProfileMenuItemClick("/bookings")}
+                                onClick={() => handleProfileMenuItemClick("/booking_details")}
                                 className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                             >
                                 Bookings
@@ -201,7 +204,7 @@ export default function Navbar() {
                     )}
                 </div>
 
-                {/* Auth Buttons (conditionally rendered for unauthenticated users) (unchanged) */}
+                {/* Auth Buttons (conditionally rendered for unauthenticated users) */}
                 {!isAuthenticated && (
                     <div className="flex gap-4">
                         <Link
