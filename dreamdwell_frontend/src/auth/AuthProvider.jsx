@@ -14,6 +14,8 @@ const AuthContextProvider = ({ children }) => {
                 localStorage.setItem("user", JSON.stringify(userData));
                 localStorage.setItem("token", token);
                 setUser(userData);
+                // ⭐ This logs the user data being set. Check your browser console
+                //    after login to see if 'profilePicture' is present here.
                 console.log("AuthContext: User logged in, setting user state to:", userData);
             }
         } catch (error) {
@@ -43,6 +45,8 @@ const AuthContextProvider = ({ children }) => {
             try {
                 parsedUser = JSON.parse(storedUserString);
                 setUser(parsedUser);
+                // ⭐ This logs the user data from localStorage. Check if 'profilePicture' is here
+                //    when the page loads if you were already logged in.
                 console.log("AuthContext: Initial load, user and token found. Setting user state.");
             } catch (error) {
                 console.error("AuthContext: Error parsing user data from localStorage:", error);
@@ -67,6 +71,8 @@ const AuthContextProvider = ({ children }) => {
                 loading,
                 login,
                 logout,
+                // ⭐ Crucial: setUser must be exposed for other components to update user data
+                setUser, // <--- Added setUser to the context value for direct updates
                 isAuthenticated: user !== null
             }}
         >

@@ -1,8 +1,8 @@
 // src/api/api.js
 import axios from "axios";
 
-// This will correctly pick up VITE_API_BASE_URL from your .env file
-const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+// ⭐ ADD export HERE ⭐
+export const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 const instance = axios.create({
     baseURL: API_URL,

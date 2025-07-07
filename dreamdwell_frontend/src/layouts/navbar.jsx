@@ -1,7 +1,8 @@
-import React, { useState, useContext, useEffect } from "react";
+// import statements remain the same as you provided
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { FaShoppingCart } from "react-icons/fa";
+import { FaShoppingCart, FaCaretDown } from "react-icons/fa";
 import { CgProfile } from "react-icons/cg";
 import { AuthContext } from "../auth/authProvider";
 import { toast } from "react-toastify";
@@ -9,9 +10,24 @@ import { getCartService } from "../services/cartService";
 
 export default function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
     const { isAuthenticated, user, logout, loading } = useContext(AuthContext);
     const navigate = useNavigate();
+    const profileMenuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+                setProfileMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -47,6 +63,7 @@ export default function Navbar() {
         logout();
         toast.info("You've been logged out successfully!");
         setMenuOpen(false);
+        setProfileMenuOpen(false);
         navigate("/login");
     };
 
@@ -66,11 +83,21 @@ export default function Navbar() {
         navigate("/cart");
     };
 
+    const toggleProfileMenu = () => {
+        setProfileMenuOpen(!profileMenuOpen);
+    };
+
+    const handleProfileMenuItemClick = (path) => {
+        setProfileMenuOpen(false);
+        setMenuOpen(false);
+        navigate(path);
+    };
+
     return (
         <nav className="fixed top-0 left-0 w-full bg-[#002B5B] text-white shadow-md z-50 h-[70px] px-6 md:px-12 flex items-center justify-between">
             {/* Logo & Mobile Toggle */}
             <div className="flex items-center gap-4">
-                <Link to="/" onClick={() => setMenuOpen(false)}>
+                <Link to="/" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                     <img src={logo} alt="logo" className="h-10 object-contain" />
                 </Link>
                 <button
@@ -82,13 +109,13 @@ export default function Navbar() {
                 </button>
             </div>
 
-            {/* Navigation Links */}
+            {/* Navigation Links (unchanged) */}
             <div
                 className={`${
                     menuOpen ? "flex" : "hidden"
                 } md:flex flex-col md:flex-row gap-4 md:gap-10 absolute md:static top-[70px] left-0 w-full md:w-auto bg-[#002B5B] md:bg-transparent px-6 md:px-0 py-4 md:py-0 text-center`}
             >
-                <Link to="/" className="text-lg font-medium hover:text-blue-300" onClick={() => setMenuOpen(false)}>
+                <Link to="/" className="text-lg font-medium hover:text-blue-300" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                     Home
                 </Link>
 
@@ -101,25 +128,25 @@ export default function Navbar() {
                 </a>
 
                 {isAuthenticated && user?.role === "Landlord" && (
-                    <Link to="/add-property" className="text-lg font-medium hover:text-blue-300" onClick={() => setMenuOpen(false)}>
+                    <Link to="/add-property" className="text-lg font-medium hover:text-blue-300" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                         Add Property
                     </Link>
                 )}
 
-                <Link to="/about" className="text-lg font-medium hover:text-blue-300" onClick={() => setMenuOpen(false)}>
+                <Link to="/about" className="text-lg font-medium hover:text-blue-300" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                     About Us
                 </Link>
-                <Link to="/blog" className="text-lg font-medium hover:text-blue-300" onClick={() => setMenuOpen(false)}>
+                <Link to="/blog" className="text-lg font-medium hover:text-blue-300" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                     Blog
                 </Link>
-                <Link to="/contact" className="text-lg font-medium hover:text-blue-300" onClick={() => setMenuOpen(false)}>
+                <Link to="/contact" className="text-lg font-medium hover:text-blue-300" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                     Contact Us
                 </Link>
             </div>
 
             {/* Cart, Profile, Auth Buttons */}
             <div className="hidden md:flex items-center gap-6">
-                {/* Cart icon with count */}
+                {/* Cart icon with count (unchanged) */}
                 <div
                     className="relative cursor-pointer"
                     onClick={handleCartClick}
@@ -133,42 +160,64 @@ export default function Navbar() {
                     )}
                 </div>
 
-                {/* Profile Info */}
-                <div className="flex flex-col items-center text-center">
-                    <CgProfile className="text-2xl text-white" />
-                    {isAuthenticated ? (
-                        <span className="text-sm font-medium">{user?.fullName}</span>
-                    ) : (
-                        <span className="text-sm font-medium">Profile</span>
+                {/* Profile Dropdown */}
+                <div className="relative" ref={profileMenuRef}>
+                    <button
+                        className="flex items-center gap-1 text-center focus:outline-none"
+                        onClick={toggleProfileMenu}
+                        aria-label="Profile menu"
+                    >
+                        <CgProfile className="text-2xl text-white" />
+                        {isAuthenticated ? (
+                            <span className="text-sm font-medium">{user?.fullName}</span>
+                        ) : (
+                            <span className="text-sm font-medium">Profile</span>
+                        )}
+                        <FaCaretDown className={`ml-1 transition-transform duration-200 ${profileMenuOpen ? 'rotate-180' : 'rotate-0'}`} />
+                    </button>
+
+                    {isAuthenticated && profileMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white text-[#002B5B] rounded-md shadow-lg py-1 z-10">
+                            <button
+                                onClick={() => handleProfileMenuItemClick("/profile")} // --- THIS IS THE KEY CHANGE ---
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                                My Profile
+                            </button>
+                            <button
+                                onClick={() => handleProfileMenuItemClick("/bookings")}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                                Bookings
+                            </button>
+                            <div className="border-t border-gray-200 my-1"></div>
+                            <button
+                                onClick={handleLogout}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     )}
                 </div>
 
-                {/* Auth Buttons */}
-                <div className="flex gap-4">
-                    {isAuthenticated ? (
-                        <button
-                            onClick={handleLogout}
+                {/* Auth Buttons (conditionally rendered for unauthenticated users) (unchanged) */}
+                {!isAuthenticated && (
+                    <div className="flex gap-4">
+                        <Link
+                            to="/signup"
                             className="bg-transparent text-white border border-white px-3 py-1 rounded-full text-base font-medium hover:bg-white hover:text-[#002B5B] transition-colors"
                         >
-                            Logout
-                        </button>
-                    ) : (
-                        <>
-                            <Link
-                                to="/signup"
-                                className="bg-transparent text-white border border-white px-3 py-1 rounded-full text-base font-medium hover:bg-white hover:text-[#002B5B] transition-colors"
-                            >
-                                Signup
-                            </Link>
-                            <Link
-                                to="/login"
-                                className="bg-transparent text-white border border-white px-3 py-1 rounded-full text-base font-medium hover:bg-white hover:text-[#002B5B] transition-colors"
-                            >
-                                Login
-                            </Link>
-                        </>
-                    )}
-                </div>
+                            Signup
+                        </Link>
+                        <Link
+                            to="/login"
+                            className="bg-transparent text-white border border-white px-3 py-1 rounded-full text-base font-medium hover:bg-white hover:text-[#002B5B] transition-colors"
+                        >
+                            Login
+                        </Link>
+                    </div>
+                )}
             </div>
         </nav>
     );

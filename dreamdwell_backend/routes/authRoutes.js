@@ -54,6 +54,7 @@ router.get("/me", authenticateUser, authController.getMe);
 // ⭐ NEW: Profile Picture Upload Route ⭐
 // Apply the 'upload' middleware here, expecting a single file with field name 'profilePicture'
 router.post('/uploadImage', authenticateUser, upload.single('profilePicture'), async (req, res) => {
+console.log(req.file)
 
     if (!req.file) {
         return res.status(400).json({ success: false, message: 'No image file provided for upload.' });
