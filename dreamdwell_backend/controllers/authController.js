@@ -1,9 +1,9 @@
 const User = require("../models/User");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcrypt"); // Make sure bcrypt is imported
 const jwt = require("jsonwebtoken");
-const { sendEmail } = require("../utils/sendEmail");
+const { sendEmail } = require("../utils/sendEmail"); // Assuming this utility exists
 
-// Register User
+// Register User (existing)
 exports.registerUser = async (req, res) => {
     const { fullName, email, phoneNumber, stakeholder, password, confirmPassword } = req.body;
 
@@ -30,7 +30,7 @@ exports.registerUser = async (req, res) => {
             email,
             phoneNumber,
             role: stakeholder,
-            password
+            password // User model pre-save hook should handle hashing
         });
 
         await newUser.save();
@@ -38,11 +38,12 @@ exports.registerUser = async (req, res) => {
         return res.status(201).json({ success: true, message: "User registered successfully" });
     } catch (err) {
         console.error("Registration Error:", err);
-        return res.status(500).json({ success: false, message: "Server error" });
+        // More specific error handling for database issues if needed
+        return res.status(500).json({ success: false, message: "Server error during registration." });
     }
 };
 
-// Login User
+// Login User (existing)
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -56,7 +57,7 @@ exports.loginUser = async (req, res) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        const passwordMatch = await user.comparePassword(password);
+        const passwordMatch = await user.comparePassword(password); // Assuming comparePassword method on User model
         if (!passwordMatch) {
             return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
@@ -79,11 +80,11 @@ exports.loginUser = async (req, res) => {
         });
     } catch (err) {
         console.error("Login Error:", err);
-        return res.status(500).json({ success: false, message: "Server error" });
+        return res.status(500).json({ success: false, message: "Server error during login." });
     }
 };
 
-// Find User ID by Credentials
+// Find User ID by Credentials (existing)
 exports.findUserIdByCredentials = async (req, res) => {
     const { email, password, stakeholder } = req.body;
 
@@ -105,30 +106,22 @@ exports.findUserIdByCredentials = async (req, res) => {
         return res.status(200).json({ success: true, userId: user._id });
     } catch (err) {
         console.error("User ID Fetch Error:", err);
-        return res.status(500).json({ success: false, message: "Server error" });
+        return res.status(500).json({ success: false, message: "Server error." });
     }
 };
 
-// ⭐ NEW: Get Current Authenticated User (for /api/auth/me) ⭐
+// Get Current Authenticated User (existing)
 exports.getMe = async (req, res) => {
-    // The `authenticateUser` middleware (from authMiddleware.js)
-    // will have already verified the JWT and fetched the user from the database,
-    // attaching the user object (without password) to `req.user`.
     if (!req.user) {
-        // This case should ideally not be reached if authenticateUser passed,
-        // but it's a good safeguard.
         return res.status(401).json({ success: false, message: "User data not available after authentication." });
     }
-
-    // Send the user data that was attached to the request by the middleware
     return res.status(200).json({
         success: true,
-        user: req.user, // req.user already contains the user details from the DB
+        user: req.user,
     });
 };
 
-
-// Send Password Reset Link
+// Send Password Reset Link (existing)
 exports.sendPasswordResetLink = async (req, res) => {
     const { email } = req.body;
 
@@ -141,6 +134,7 @@ exports.sendPasswordResetLink = async (req, res) => {
 
         if (!user) {
             console.log(`Password reset requested for non-existent email: ${email}`);
+            // Send a generic success message to prevent email enumeration
             return res.status(200).json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
         }
 
@@ -150,6 +144,7 @@ exports.sendPasswordResetLink = async (req, res) => {
             { expiresIn: '1h' }
         );
 
+        // Ensure FRONTEND_URL is set in your .env
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
         const subject = 'DreamDwell Password Reset Request';
@@ -173,7 +168,7 @@ exports.sendPasswordResetLink = async (req, res) => {
     }
 };
 
-// Reset Password Handler
+// Reset Password Handler (existing)
 exports.resetPassword = async (req, res) => {
     const { token } = req.params;
     const { newPassword, confirmPassword } = req.body;
@@ -198,7 +193,7 @@ exports.resetPassword = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found or token is invalid.' });
         }
 
-        user.password = newPassword; // Pre-save hook will hash it
+        user.password = newPassword; // Mongoose pre-save hook should hash this
         await user.save();
 
         return res.status(200).json({ success: true, message: 'Password has been reset successfully.' });
@@ -212,5 +207,106 @@ exports.resetPassword = async (req, res) => {
 
         console.error('Error in resetPassword:', error);
         return res.status(500).json({ success: false, message: 'Failed to reset password. Please try again later.' });
+    }
+};
+
+// ⭐ NEW: Change Password (for logged-in users) ⭐
+exports.changePassword = async (req, res) => {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    // `req.user` is populated by the `authenticateUser` middleware
+    const userId = req.user._id;
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return res.status(400).json({ success: false, message: "All password fields are required." });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({ success: false, message: "New password and confirm password do not match." });
+    }
+
+    if (newPassword.length < 8) {
+        return res.status(400).json({ success: false, message: "New password must be at least 8 characters long." });
+    }
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            // This case should ideally not happen if authenticateUser works correctly
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        // Verify current password against the hashed password in DB
+        const isMatch = await user.comparePassword(currentPassword); // Assuming comparePassword method
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Incorrect current password." });
+        }
+
+        // Update password (Mongoose pre-save hook should handle hashing the new password)
+        user.password = newPassword;
+        await user.save();
+
+        return res.status(200).json({ success: true, message: "Password changed successfully!" });
+
+    } catch (error) {
+        console.error("Error in changePassword:", error);
+        // Specific error handling for database issues, validation, etc.
+        return res.status(500).json({ success: false, message: "Server error during password change." });
+    }
+};
+
+// ⭐ NEW: Update User Profile (for logged-in users) ⭐
+exports.updateProfile = async (req, res) => {
+    // `req.user` is populated by the `authenticateUser` middleware
+    const userId = req.user._id;
+    const { fullName, email, phoneNumber } = req.body;
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        // --- Important: Handle email change to prevent duplicate emails ---
+        if (email && email !== user.email) {
+            const existingUserWithEmail = await User.findOne({ email });
+            // If another user already has this email (and it's not the current user's ID)
+            if (existingUserWithEmail && String(existingUserWithEmail._id) !== String(userId)) {
+                return res.status(400).json({ success: false, message: "Email already in use by another account." });
+            }
+        }
+
+        // Update fields if they are provided in the request body (and are different)
+        if (fullName !== undefined && fullName !== user.fullName) user.fullName = fullName;
+        if (email !== undefined && email !== user.email) user.email = email;
+        if (phoneNumber !== undefined && phoneNumber !== user.phoneNumber) user.phoneNumber = phoneNumber;
+
+        // Only save if there were actual changes to avoid unnecessary writes
+        const modifiedPaths = user.isModified();
+        if (modifiedPaths.length > 0) {
+            await user.save();
+        } else {
+            console.log("No changes detected for profile update.");
+            return res.status(200).json({ success: true, message: "No changes detected. Profile remains the same.", user: user.toObject() });
+        }
+
+
+        // Return the updated user object, excluding the password
+        const { password: _, ...userWithoutPassword } = user.toObject();
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully!",
+            user: userWithoutPassword
+        });
+
+    } catch (error) {
+        console.error("Error in updateProfile:", error);
+        // Handle Mongoose validation errors or other server errors
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({ success: false, message: messages.join(', ') });
+        }
+        return res.status(500).json({ success: false, message: "Server error during profile update." });
     }
 };

@@ -3,7 +3,11 @@
 const express = require('express');
 const router = express.Router();
 const calendarController = require('../controllers/calendarController'); // Your calendar controller
+
+// ⭐ IMPORTANT CHANGE: Corrected the import path for your middleware ⭐
+// It should point to 'authMiddleware.js' instead of 'auth.js'
 const { authenticateUser, requireRole } = require('../middlewares/auth'); // Your consolidated auth & role middleware
+
 const { isOwnerOrRelatedResource } = require('../middlewares/resourceAuthMiddleware'); // Your new resource auth middleware
 
 
@@ -11,7 +15,7 @@ const Availability = require('../models/calendar');
 const Booking = require('../models/Booking');
 
 
-router.use(authenticateUser);
+router.use(authenticateUser); // Apply authenticateUser to all routes within this router
 
 // --- Landlord Calendar Routes ---
 
@@ -89,8 +93,6 @@ router.put('/bookings/:id/status',
 
 
 router.delete('/bookings/:id',
-    // This middleware handles checking if the authenticated user is either the tenant who made the booking
-    // OR the landlord of the property for which the booking was made.
     isOwnerOrRelatedResource(Booking, 'id'),
     calendarController.deleteBooking
 );

@@ -8,7 +8,7 @@ import {
     sendPasswordResetLinkApi,
     resetPasswordApi,
     changePasswordApi,
-    updateProfileApi
+    updateProfileApi // Make sure updateProfileApi is imported
 } from '../api/authApi';
 
 // --- Internal Service Functions for Hooks ---
@@ -19,6 +19,7 @@ const uploadProfilePictureService = async (file) => {
     return response.data;
 };
 
+// Service function for updating profile (now calls updateProfileApi)
 const updateProfileService = async (profileData) => {
     const response = await updateProfileApi(profileData);
     return response.data;
@@ -26,11 +27,6 @@ const updateProfileService = async (profileData) => {
 
 // --- React Query Hooks ---
 
-/**
- * Hook for sending a password reset link.
- * Uses `sendPasswordResetLinkApi` from `authApi.js`.
- */
-// ⭐⭐⭐ ENSURE THIS LINE IS EXACTLY AS SHOWN BELOW ⭐⭐⭐
 export const useSendPasswordResetLink = () => {
     return useMutation({
         mutationFn: sendPasswordResetLinkApi,
@@ -43,11 +39,7 @@ export const useSendPasswordResetLink = () => {
         }
     });
 };
-// ⭐⭐⭐ END OF CRITICAL LINE CHECK ⭐⭐⭐
 
-/**
- * Hook for resetting a password using a token.
- */
 export const useResetPassword = () => {
     return useMutation({
         mutationFn: ({ token, newPassword, confirmPassword }) => resetPasswordApi({ newPassword, confirmPassword }, token),
@@ -61,9 +53,6 @@ export const useResetPassword = () => {
     });
 };
 
-/**
- * Hook for changing a user's password while logged in.
- */
 export const useChangePassword = () => {
     return useMutation({
         mutationFn: changePasswordApi,
@@ -77,9 +66,6 @@ export const useChangePassword = () => {
     });
 };
 
-/**
- * Hook for uploading a user's profile picture.
- */
 export const useUploadProfilePicture = () => {
     return useMutation({
         mutationFn: uploadProfilePictureService,
@@ -93,11 +79,13 @@ export const useUploadProfilePicture = () => {
     });
 };
 
+// Hook for updating user profile
 export const useUpdateProfile = () => {
     return useMutation({
-        mutationFn: updateProfileService,
+        mutationFn: updateProfileService, // Calls the service function which calls updateProfileApi
         mutationKey: ['updateProfile'],
         onSuccess: (data) => {
+            // Success message is handled by the component using this hook
             toast.success(data.message || "Profile updated successfully!");
         },
         onError: (err) => {

@@ -11,11 +11,12 @@ import Header from "../layouts/navbar";
 import Footer from "../layouts/footer";
 
 import { useUploadProfilePicture } from "../hooks/useAuthHooks";
-
-// ⭐ NEW IMPORTS for Saved Properties (Cart) functionality ⭐
 import { getCartService, removeFromCartService } from '../services/cartService.js';
-// ⭐ IMPORT API_URL from your centralized api.js file ⭐
-import { API_URL } from '../api/api.js'; // <--- CHANGED THIS LINE
+import { API_URL } from '../api/api.js';
+
+// ⭐ NEW IMPORTS: Your separate form components ⭐
+import UpdatePersonalInfoForm from '../components/profile/UpdatePersonalInfoForm'; // Adjust path if needed
+import ChangePasswordForm from '../components/profile/ChangePasswordForm'; // Adjust path if needed
 
 export default function ProfilePage() {
     const { user, loading, setUser } = useContext(AuthContext);
@@ -30,12 +31,18 @@ export default function ProfilePage() {
         role: "User",
     });
 
+    // Removed personalInfoForm and passwordForm states from here,
+    // as they are now managed within their respective components.
+
     const [savedProperties, setSavedProperties] = useState([]);
     const [loadingSavedProperties, setLoadingSavedProperties] = useState(false);
     const [errorSavedProperties, setErrorSavedProperties] = useState(null);
 
     const fileInputRef = useRef(null);
     const { mutate: uploadPicture, isLoading: isUploading } = useUploadProfilePicture();
+
+    // Removed useUpdateProfile and useChangePassword hooks from here,
+    // as they are now managed within their respective components.
 
     useEffect(() => {
         if (user) {
@@ -44,13 +51,13 @@ export default function ProfilePage() {
                 fullName: user.fullName || "",
                 email: user.email || "",
                 phoneNumber: user.phoneNumber || "",
-                // ⭐ CRITICAL: Use the imported API_URL here ⭐
                 profileImage: user.profilePicture
-                    ? `${API_URL}${user.profilePicture}` // <--- CHANGED THIS LINE
+                    ? `${API_URL}${user.profilePicture}`
                     : "/placeholder-profile.png",
                 joinDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A",
                 role: user.role || "User",
             }));
+            // No need to set personalInfoForm here anymore
         }
     }, [user]);
 
@@ -129,6 +136,9 @@ export default function ProfilePage() {
         }
     };
 
+    // Removed handlePersonalInfoChange, handlePersonalInfoSubmit,
+    // handlePasswordChange, handleChangePasswordSubmit from here.
+
     const getSidebarButtonClasses = (tabName) => {
         const baseClasses = "w-full flex items-center px-4 py-3 rounded-lg text-base font-medium transition-colors duration-200";
         if (activeTab === tabName) {
@@ -159,6 +169,7 @@ export default function ProfilePage() {
             <div className="container mx-auto px-4 py-8 flex-grow mt-[70px] md:mt-[90px]">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     <aside className="lg:col-span-1 bg-white rounded-xl shadow-lg p-6 h-fit sticky top-24">
+                        {/* Profile Image & Details Section */}
                         <div className="flex flex-col items-center text-center pb-6 border-b border-gray-200 mb-6">
                             <div className="relative group">
                                 <img
@@ -212,6 +223,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
+                        {/* Quick Stats Section */}
                         <div className="space-y-4 mb-6 pt-4 border-b border-gray-200">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-600">Saved properties</span>
@@ -219,6 +231,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
+                        {/* Navigation Section */}
                         <nav className="space-y-2">
                             <button
                                 type="button"
@@ -295,6 +308,7 @@ export default function ProfilePage() {
                         </nav>
                     </aside>
 
+                    {/* Main Content Area */}
                     <main className="lg:col-span-3 bg-white rounded-xl shadow-lg p-8">
                         {activeTab === "overview" && (
                             <div className="flex flex-col items-center justify-center h-full text-center py-12">
@@ -323,10 +337,15 @@ export default function ProfilePage() {
                             </div>
                         )}
 
+                        {/* ⭐ PERSONAL INFORMATION SECTION - NOW USING SEPARATE COMPONENTS ⭐ */}
                         {activeTab === "personal" && (
-                            <h2 className="text-3xl font-bold text-gray-800 mb-6">Personal Information (Placeholder)</h2>
+                            <div className="space-y-8">
+                                <UpdatePersonalInfoForm />
+                                <ChangePasswordForm />
+                            </div>
                         )}
 
+                        {/* Saved Properties Tab Content */}
                         {activeTab === "saved" && (
                             <>
                                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Saved Properties ({savedProperties.length})</h1>
@@ -349,7 +368,7 @@ export default function ProfilePage() {
                                                 <div className="w-full h-40 bg-gray-200 flex items-center justify-center rounded-md mb-3 overflow-hidden">
                                                     {item.property.images && item.property.images.length > 0 ? (
                                                         <img
-                                                            src={`${API_URL}/${item.property.images[0]}`} // <--- CHANGED THIS LINE
+                                                            src={`${API_URL}/${item.property.images[0]}`}
                                                             alt={item.property.title}
                                                             className="w-full h-full object-cover"
                                                         />
