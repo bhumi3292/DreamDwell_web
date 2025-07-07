@@ -138,9 +138,12 @@ export default function Navbar() {
                 <Link to="/about" className="text-lg font-medium hover:text-blue-300" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                     About Us
                 </Link>
+                {/* REMOVED: Blog Link */}
+                {/*
                 <Link to="/blog" className="text-lg font-medium hover:text-blue-300" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                     Blog
                 </Link>
+                */}
                 <Link to="/contact" className="text-lg font-medium hover:text-blue-300" onClick={() => { setMenuOpen(false); setProfileMenuOpen(false); }}>
                     Contact Us
                 </Link>

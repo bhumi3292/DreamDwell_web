@@ -17,6 +17,7 @@ import PropertyDetail from "../pages/propertyDetails.jsx";
 import CartPage from "../pages/cartProperty.jsx";
 import ProfilePage   from "../pages/profilePage.jsx";
 import Booking_Details from "../pages/Booking_Details.jsx";
+import AboutUs from "../pages/AboutUs.jsx";
 
 
 const DashboardPage = () => <div className="p-4 text-xl">Welcome to the Dashboard! This is a protected page.</div>;
@@ -48,6 +49,7 @@ export default function AppRoutes() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/booking_details" element={<Booking_Details />} />
+            <Route path="/about" element={<AboutUs />} />
 
             {/* Protected routes */}
             <Route
