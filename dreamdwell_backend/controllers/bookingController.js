@@ -1,42 +1,52 @@
-const Booking = require("../models/Booking");
-const Property = require("../models/Property");
+// dreamdwell_backend/models/Booking.js
+const mongoose = require('mongoose');
 
-// Create Booking (Tenant only)
-const createBooking = async (req, res) => {
-    const { propertyId, startDate, endDate } = req.body;
-
-    if (!propertyId || !startDate || !endDate) {
-        return res.status(400).json({ success: false, message: "All fields are required" });
+const BookingSchema = new mongoose.Schema({
+    property: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Property',
+        required: true
+    },
+    tenant: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    // ⭐ NEW/CORRECTED: Add landlord field to easily query landlord's bookings ⭐
+    landlord: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    // ⭐ NEW/CORRECTED: Use 'date' (as String 'YYYY-MM-DD') and 'timeSlot' for single-slot visits ⭐
+    date: {
+        type: String, // Storing as 'YYYY-MM-DD' string for consistency with Availability
+        required: true
+    },
+    timeSlot: {
+        type: String, // e.g., "10:00 AM", "14:30"
+        required: true
+    },
+    // ⭐ NEW/CORRECTED: Add status field for booking lifecycle ⭐
+    status: {
+        type: String,
+        enum: ['pending', 'confirmed', 'cancelled', 'rejected'], // Ensure these match frontend
+        default: 'pending'
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
+}, {
+    toJSON: { virtuals: true }, // Allows virtuals to be included when converting to JSON
+    toObject: { virtuals: true } // Allows virtuals to be included when converting to object
+});
 
-    try {
-        const booking = new Booking({
-            property: propertyId,
-            tenant: req.user._id,
-            startDate,
-            endDate,
-        });
+// Add a compound unique index to prevent duplicate active bookings for the exact same slot
+// 'pending' and 'confirmed' are considered active.
+BookingSchema.index({ property: 1, date: 1, timeSlot: 1, tenant: 1 }, {
+    unique: true,
+    partialFilterExpression: { status: { $in: ['pending', 'confirmed'] } }
+});
 
-        await booking.save();
-        res.status(201).json({ success: true, message: "Booking successful", booking });
-    } catch (err) {
-        console.error("Create booking error:", err);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-// Get My Bookings (Tenant)
-const getMyBookings = async (req, res) => {
-    try {
-        const bookings = await Booking.find({ tenant: req.user._id }).populate("property");
-        res.status(200).json({ success: true, bookings });
-    } catch (err) {
-        console.error("Get bookings error:", err);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
-};
-
-module.exports = {
-    createBooking,
-    getMyBookings,
-};
+module.exports = mongoose.model('Booking', BookingSchema);
