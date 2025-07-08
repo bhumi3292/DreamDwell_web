@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom"; // Using react-router-dom Link
 import Navbar from "../layouts/navbar.jsx"; // Assuming your Navbar component path
-import Footer from "../layouts/footer.jsx"; // Assuming your Footer component path
 
 // Import icons from lucide-react
 import { Mail, Phone, MapPin, Clock, MessageCircle, Headphones, FileText } from "lucide-react";
@@ -307,7 +306,6 @@ export default function ContactPage() {
                 </div>
             </section>
 
-            <Footer />
         </div>
     );
 }

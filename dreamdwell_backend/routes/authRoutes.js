@@ -2,13 +2,13 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
-const { authenticateUser } = require("../middlewares/auth"); // Assuming this path is correct
+const { authenticateUser } = require("../middlewares/auth");
 
 const multer = require('multer');
 const path = require('path');
-const User = require('../models/User'); // Import your User model here
+const User = require('../models/User');
 
-// Configure Multer storage
+// Configure Multer storage - This section is correct and only needs to appear once
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploads/');
@@ -18,19 +18,29 @@ const storage = multer.diskStorage({
     }
 });
 
-// Initialize Multer upload middleware
+// Initialize Multer upload middleware - This is the corrected and expanded definition.
+// It should only appear ONCE.
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Optional: 5MB file size limit
+    limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB limit is very large, consider reducing if not strictly needed
     fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|gif/;
+        // Expanded filetypes to include heic and webp
+        const filetypes = /jpeg|jpg|png|gif|heic|webp/; // Added heic and webp
+
         const mimetype = filetypes.test(file.mimetype);
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        // Diagnostic logs (keep these for debugging, remove in production if not needed)
+        console.log('DEBUG (Backend): Received file.mimetype:', file.mimetype);
+        console.log('DEBUG (Backend): Received file.originalname extension:', path.extname(file.originalname).toLowerCase());
+        console.log('DEBUG (Backend): mimetype test result:', mimetype);
+        console.log('DEBUG (Backend): extname test result:', extname);
 
         if (mimetype && extname) {
             return cb(null, true);
         }
-        cb(new Error('Error: File upload only supports JPEG, JPG, PNG, and GIF images.'));
+        // Update the error message to reflect newly supported types
+        cb(new Error('Error: File upload only supports JPEG, JPG, PNG, GIF, HEIC, and WebP images.'));
     }
 });
 
@@ -47,46 +57,46 @@ router.post("/reset-password/:token", authController.resetPassword);
 // Get Current User Route (Protected)
 router.get("/me", authenticateUser, authController.getMe);
 
-// ⭐ ADD THIS NEW ROUTE FOR CHANGE PASSWORD (Protected) ⭐
 router.post('/change-password', authenticateUser, authController.changePassword);
 
-// ⭐ ADD THIS NEW ROUTE FOR UPDATE PROFILE (Protected) ⭐
 router.put('/update-profile', authenticateUser, authController.updateProfile);
 
-
-// ===============================================
-// ⭐ Profile Picture Upload Route ⭐
+// Image Upload Route - THIS IS THE RELEVANT SECTION. IT IS ALREADY A POST.
+// Frontend needs to send a POST request to this endpoint.
 router.post('/uploadImage', authenticateUser, upload.single('profilePicture'), async (req, res) => {
-    console.log(req.file)
+    // console.log(req.file) // Uncomment if you want to see multer's file object
 
     if (!req.file) {
         return res.status(400).json({ success: false, message: 'No image file provided for upload.' });
     }
 
     try {
-        const userId = req.user._id; // Get user ID from the authenticated request
-        const imageUrl = `/uploads/${req.file.filename}`; // Construct the public URL
+        const userId = req.user._id;
+        // Construct the URL path to store in the database
+        const imageUrl = `/uploads/${req.file.filename}`;
 
         const updatedUser = await User.findByIdAndUpdate(
             userId,
             { profilePicture: imageUrl },
             { new: true, runValidators: true }
-        ).select('-password');
+        ).select('-password'); // Exclude password from the returned user object
 
         if (!updatedUser) {
+            // This case should be rare if authenticateUser works, but good to have
             return res.status(404).json({ success: false, message: 'Authenticated user not found in database.' });
         }
 
         res.status(200).json({
             success: true,
             message: 'Profile picture uploaded successfully',
-            imageUrl: imageUrl,
-            user: updatedUser
+            imageUrl: imageUrl, // Confirm the path that was saved
+            user: updatedUser // Return the updated user object (without password)
         });
 
     } catch (error) {
         console.error('Database update error after file upload:', error);
-        res.status(500).json({ success: false, message: 'Internal server error while updating profile picture.' });
+        // More granular error handling for database issues if needed
+        return res.status(500).json({ success: false, message: 'Internal server error while updating profile picture.' });
     }
 });
 

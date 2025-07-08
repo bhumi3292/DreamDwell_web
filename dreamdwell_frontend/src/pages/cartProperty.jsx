@@ -7,8 +7,11 @@ import {
     getCartService,
     removeFromCartService
 } from '../services/cartService.js';
+// Import API_URL from your centralized API file
+import { API_URL } from '../api/api.js'; // Assuming this path is correct
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+// Remove the locally defined API_BASE_URL
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 export default function CartPage() {
     const [cartItems, setCartItems] = useState([]);
@@ -71,11 +74,12 @@ export default function CartPage() {
                             onClick={() => handleCardClick(item.property)}
                             className="relative border rounded-lg p-4 mb-4 bg-gray-50 shadow-sm flex items-center justify-between cursor-pointer hover:shadow-md transition"
                         >
-                            {/* --- New: Display the property image --- */}
+                            {/* --- Display the property image --- */}
                             <div className="flex items-center gap-4">
                                 {item.property.images && item.property.images.length > 0 ? (
                                     <img
-                                        src={`${API_BASE_URL}/${item.property.images[0]}`}
+                                        // Now using the imported API_URL
+                                        src={`${API_URL}/${item.property.images[0]}`}
                                         alt={item.property.title}
                                         className="w-24 h-24 object-cover rounded-lg shadow-sm"
                                     />

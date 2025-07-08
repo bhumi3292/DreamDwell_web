@@ -1,27 +1,37 @@
 // src/api/authApi.js
-import axios from "./api"; // Ensure this path to your configured axios instance is correct
+import api from './api';
 
-export const registerUserApi = (data) => {
-    console.log(data);
-    return axios.post('/api/auth/register', data);
+export const registerUserApi = async (userData) => {
+    return await api.post('/api/auth/register', userData);
 };
 
-export const loginUserApi = (data) => {
-    return axios.post('/api/auth/login', data);
+export const loginUserApi = async (credentials) => {
+    return await api.post('/api/auth/login', credentials);
 };
 
-export const sendPasswordResetLinkApi = (data) => {
-    return axios.post('/api/auth/request-reset/send-link', data);
+export const getAuthUserApi = async () => {
+    return await api.get('/api/auth/me');
 };
 
-export const resetPasswordApi = (data, token) => {
-    return axios.post(`/api/auth/reset-password/${token}`, data);
+export const updateUserApi = async (userId, userData) => {
+    return await api.put(`/api/auth/users/${userId}`, userData);
 };
 
-export const changePasswordApi = (data) => {
-    return axios.post('/api/auth/change-password', data);
+
+export const sendPasswordResetLinkApi = async (data) => {
+
+    return await api.post('/api/auth/request-reset/send-link', data);
 };
 
-export const updateProfileApi = (profileData) => {
-    return axios.put('/api/auth/update-profile', profileData);
+export const resetPasswordApi = async (data, token) => {
+    return await api.post(`/api/auth/reset-password/${token}`, data);
+};
+
+export const changePasswordApi = async (data) => {
+    return await api.post('/api/auth/change-password', data);
+};
+
+export const updateProfileApi = async (profileData) => {
+
+    return await api.put('/api/auth/update-profile', profileData);
 };

@@ -9,7 +9,6 @@ export const getAvailableSlotsForPropertyApi = async (propertyId, date) => {
         return response.data.availableSlots;
     } catch (error) {
         console.error('Error fetching available slots:', error);
-        // Throw the backend's message or a generic one
         throw error.response?.data?.message || 'Failed to fetch available slots.';
     }
 };

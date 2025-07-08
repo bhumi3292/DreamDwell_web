@@ -4,38 +4,108 @@ import { Link } from "react-router-dom";
 import { AuthContext } from "../auth/AuthProvider";
 import { toast } from "react-toastify";
 import {
-    User, Camera, Edit, Heart, Calendar, MessageCircle, Settings, Clock, Home as HomeIcon, CreditCard, BellDot, Trash2
+    User, Camera, Edit, Heart, MessageCircle, Settings, Clock, Home as HomeIcon, BellDot, Trash2,
+    LayoutDashboard, CalendarDays // Import CalendarDays for applications/bookings
 } from "lucide-react";
 
-import Header from "../layouts/navbar";
-import Footer from "../layouts/footer"; // Assuming you still want the footer
+import Header from "../layouts/navbar"; // Assuming Navbar is now Header as per the code
+import Footer from "../layouts/footer";
 
 import { useUploadProfilePicture } from "../hooks/useAuthHooks";
+// Ensure these imports are from the correct place
 import { getCartService, removeFromCartService } from '../services/cartService.js';
-import { API_URL } from '../api/api.js';
+import { API_URL } from '../api/api.js'; // Centralized API_URL import
 
-import UpdatePersonalInfoForm from '../components/profile/UpdatePersonalInfoForm'; // Adjust path if needed
-import ChangePasswordForm from '../components/profile/ChangePasswordForm'; // Adjust path if needed
+import UpdatePersonalInfoForm from '../components/profile/UpdatePersonalInfoForm';
+import ChangePasswordForm from '../components/profile/ChangePasswordForm';
+
+import { getMyChats } from '../api/chatApi';
+import ChatView from '../components/ChatView';
+
+// Import booking API services and react-query hooks
+import { useQuery } from '@tanstack/react-query';
+import { getTenantBookingsApi, getLandlordBookingsApi } from '../api/calendarApi';
+
 
 export default function ProfilePage() {
-    const { user, loading, setUser } = useContext(AuthContext);
+    const { user, loading: authLoading, setUser, isAuthenticated } = useContext(AuthContext);
 
     const [activeTab, setActiveTab] = useState("overview");
     const [userData, setUserData] = useState({
         fullName: "",
         email: "",
         phoneNumber: "",
-        profileImage: "/placeholder-profile.png",
+        profileImage: "/placeholder-profile.png", // Default placeholder
         joinDate: "N/A",
         role: "User",
     });
 
-    const [savedProperties, setSavedProperties] = useState([]);
+    const [savedPropertiesCount, setSavedPropertiesCount] = useState(0);
+    const [savedPropertiesList, setSavedPropertiesList] = useState([]);
     const [loadingSavedProperties, setLoadingSavedProperties] = useState(false);
     const [errorSavedProperties, setErrorSavedProperties] = useState(null);
 
+    const [activeApplicationsCount, setActiveApplicationsCount] = useState(0);
+    const [pastRentalsCount, setPastRentalsCount] = useState(0);
+
+    const [myChats, setMyChats] = useState([]);
+    const [loadingChats, setLoadingChats] = useState(false);
+    const [errorChats, setErrorChats] = useState(null);
+    const [selectedChatId, setSelectedChatId] = useState(null);
+
+
     const fileInputRef = useRef(null);
     const { mutate: uploadPicture, isLoading: isUploading } = useUploadProfilePicture();
+
+    // Fetch booking data using react-query
+    const { data: bookings, isLoading: isLoadingBookings, isError: isErrorBookings, error: bookingsError } = useQuery({
+        queryKey: ['bookings', user?.role],
+        queryFn: async () => {
+            if (!isAuthenticated) return [];
+            if (user.role === 'Tenant') {
+                return await getTenantBookingsApi();
+            } else if (user.role === 'Landlord') {
+                return await getLandlordBookingsApi();
+            }
+            return [];
+        },
+        enabled: isAuthenticated && !authLoading && activeTab === "overview" && !!user?.role,
+        refetchOnWindowFocus: false,
+        staleTime: 5 * 60 * 1000 // 5 minutes
+    });
+
+    // Process booking data into counts
+    useEffect(() => {
+        if (bookings) {
+            const now = new Date();
+            let activeCount = 0;
+            let pastCount = 0;
+
+            bookings.forEach(booking => {
+                // Ensure booking.date is treated as a date at the start of the day for comparison
+                const bookingDate = new Date(booking.date);
+                bookingDate.setHours(0,0,0,0); // Set to start of the day
+
+                const today = new Date();
+                today.setHours(0,0,0,0); // Set today to start of the day
+
+                const isFutureBooking = bookingDate >= today;
+
+                if (booking.status === 'pending' || booking.status === 'confirmed') {
+                    if (isFutureBooking) {
+                        activeCount++;
+                    } else {
+                        pastCount++; // Treat confirmed/pending past dates as past rentals
+                    }
+                } else if (booking.status === 'cancelled' || booking.status === 'rejected') {
+                    pastCount++;
+                }
+            });
+
+            setActiveApplicationsCount(activeCount);
+            setPastRentalsCount(pastCount);
+        }
+    }, [bookings]);
 
     useEffect(() => {
         if (user) {
@@ -44,8 +114,9 @@ export default function ProfilePage() {
                 fullName: user.fullName || "",
                 email: user.email || "",
                 phoneNumber: user.phoneNumber || "",
+                // Use URL constructor for profile image for robustness
                 profileImage: user.profilePicture
-                    ? `${API_URL}${user.profilePicture}`
+                    ? new URL(user.profilePicture, API_URL).href
                     : "/placeholder-profile.png",
                 joinDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A",
                 role: user.role || "User",
@@ -53,19 +124,50 @@ export default function ProfilePage() {
         }
     }, [user]);
 
+    // Fetch saved properties count for overview
     useEffect(() => {
-        if (activeTab === "saved" && user) {
-            fetchSavedProperties();
+        if (activeTab === "overview" && user) {
+            fetchSavedPropertiesCount();
         }
     }, [activeTab, user]);
 
-    const fetchSavedProperties = async () => {
+    // Fetch detailed saved properties list when 'saved' tab is active
+    useEffect(() => {
+        if (activeTab === "saved" && user) {
+            fetchDetailedSavedProperties();
+        }
+    }, [activeTab, user]);
+
+    // Fetch chats only when messages tab is active
+    useEffect(() => {
+        if (activeTab === "messages" && user) {
+            fetchMyChats();
+        }
+    }, [activeTab, user]);
+
+
+    const fetchSavedPropertiesCount = async () => {
         setLoadingSavedProperties(true);
         setErrorSavedProperties(null);
         try {
             const res = await getCartService();
             const validItems = res.data?.items?.filter(item => item && item.property) || [];
-            setSavedProperties(validItems);
+            setSavedPropertiesCount(validItems.length);
+        } catch (err) {
+            setErrorSavedProperties("Failed to load saved properties count.");
+            console.error(err);
+        } finally {
+            setLoadingSavedProperties(false);
+        }
+    };
+
+    const fetchDetailedSavedProperties = async () => {
+        setLoadingSavedProperties(true);
+        setErrorSavedProperties(null);
+        try {
+            const res = await getCartService();
+            const validItems = res.data?.items?.filter(item => item && item.property) || [];
+            setSavedPropertiesList(validItems); // Set the actual list here
         } catch (err) {
             setErrorSavedProperties("Failed to load saved properties.");
             toast.error("Error fetching saved properties.");
@@ -74,6 +176,26 @@ export default function ProfilePage() {
             setLoadingSavedProperties(false);
         }
     };
+
+
+    const fetchMyChats = async () => {
+        setLoadingChats(true);
+        setErrorChats(null);
+        try {
+            const chats = await getMyChats();
+            setMyChats(chats);
+            if (chats.length > 0 && !selectedChatId) {
+                setSelectedChatId(chats[0]._id);
+            }
+        } catch (err) {
+            setErrorChats("Failed to load chats.");
+            toast.error("Error fetching chats.");
+            console.error(err);
+        } finally {
+            setLoadingChats(false);
+        }
+    };
+
 
     const handleImageClick = () => {
         if (!user) {
@@ -120,7 +242,8 @@ export default function ProfilePage() {
     const handleRemoveSavedProperty = async (propertyId) => {
         try {
             await removeFromCartService(propertyId);
-            setSavedProperties(prev => prev.filter(item => item.property._id !== propertyId));
+            setSavedPropertiesList(prev => prev.filter(item => item.property._id !== propertyId)); // Update the list
+            setSavedPropertiesCount(prev => prev - 1); // Update the count
             toast.success("Property removed from saved list!");
         } catch (err) {
             toast.error("Failed to remove property from saved list.");
@@ -136,9 +259,18 @@ export default function ProfilePage() {
         return `${baseClasses} text-gray-700 hover:bg-blue-100 hover:text-[#003366] hover:shadow-sm`;
     };
 
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-700">Loading profile...</div>;
+    // Adjusted loading state for a smoother UX
+    if (authLoading || (loadingSavedProperties && activeTab === "saved") || (isLoadingBookings && activeTab === "overview") || (loadingChats && activeTab === "messages")) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-700">
+                <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    Loading profile data...
+                </div>
+            </div>
+        );
     }
+
 
     if (!user) {
         return (
@@ -212,14 +344,6 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* Quick Stats Section */}
-                        <div className="space-y-4 mb-6 pt-4 border-b border-gray-200">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600">Saved properties</span>
-                                <span className="text-sm font-medium text-gray-800">{savedProperties.length}</span>
-                            </div>
-                        </div>
-
                         {/* Navigation Section */}
                         <nav className="space-y-2">
                             <button
@@ -228,7 +352,7 @@ export default function ProfilePage() {
                                 onClick={() => setActiveTab("overview")}
                                 aria-current={activeTab === "overview" ? "page" : undefined}
                             >
-                                <User className="h-5 w-5 mr-3" />
+                                <LayoutDashboard className="h-5 w-5 mr-3" />
                                 Overview
                             </button>
                             <button
@@ -249,7 +373,6 @@ export default function ProfilePage() {
                                 <Heart className="h-5 w-5 mr-3" />
                                 Saved Properties
                             </button>
-                            {/* REMOVED: Rental History button */}
                             <button
                                 type="button"
                                 className={getSidebarButtonClasses("messages")}
@@ -259,7 +382,6 @@ export default function ProfilePage() {
                                 <MessageCircle className="h-5 w-5 mr-3" />
                                 Messages
                             </button>
-                            {/* REMOVED: Payments button */}
                             <button
                                 type="button"
                                 className={getSidebarButtonClasses("notifications")}
@@ -284,33 +406,67 @@ export default function ProfilePage() {
                     {/* Main Content Area */}
                     <main className="lg:col-span-3 bg-white rounded-xl shadow-lg p-8">
                         {activeTab === "overview" && (
-                            <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                                <HomeIcon className="h-16 w-16 text-[#003366] mb-4" />
-                                <h1 className="text-3xl font-extrabold text-gray-800 mb-3">
-                                    Welcome, <span className="text-[#003366]">{userData.fullName}!</span>
-                                </h1>
-                                <p className="text-lg text-gray-600 max-w-2xl">
-                                    This is your personal dashboard. Use the sidebar on the left to navigate through your profile sections.
-                                    Manage your personal information, saved properties, applications, and more.
-                                </p>
-                                <div className="mt-8 flex gap-4">
-                                    <button
-                                        onClick={() => setActiveTab("personal")}
-                                        className="bg-[#003366] text-white px-6 py-3 rounded-lg shadow-md hover:bg-[#002244] transition-colors font-semibold"
-                                    >
-                                        Edit Profile
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab("saved")}
-                                        className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg shadow-md hover:bg-gray-300 transition-colors font-semibold"
-                                    >
-                                        View Saved
-                                    </button>
+                            <>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-6">Profile Overview</h1>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+                                    {/* Saved Properties Card */}
+                                    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col items-center justify-center">
+                                        <Heart className="h-10 w-10 text-[#003366] mb-3" />
+                                        <div className="text-3xl font-bold text-gray-900">
+                                            {loadingSavedProperties ? <span className="animate-pulse">...</span> : savedPropertiesCount}
+                                        </div>
+                                        <p className="text-lg text-gray-600">Saved Properties</p>
+                                    </div>
+
+                                    {/* Active Applications Card */}
+                                    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col items-center justify-center">
+                                        <CalendarDays className="h-10 w-10 text-[#003366] mb-3" />
+                                        <div className="text-3xl font-bold text-gray-900">
+                                            {isLoadingBookings ? <span className="animate-pulse">...</span> : activeApplicationsCount}
+                                        </div>
+                                        <p className="text-lg text-gray-600">Active Applications</p>
+                                    </div>
+
+                                    {/* Past Rentals Card */}
+                                    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col items-center justify-center">
+                                        <HomeIcon className="h-10 w-10 text-[#003366] mb-3" />
+                                        <div className="text-3xl font-bold text-gray-900">
+                                            {isLoadingBookings ? <span className="animate-pulse">...</span> : pastRentalsCount}
+                                        </div>
+                                        <p className="text-lg text-gray-600">Past Rentals</p>
+                                    </div>
                                 </div>
-                            </div>
+
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Activity</h2>
+                                <div className="space-y-4">
+                                    {/* Placeholder for Recent Activity - You'll replace this with dynamic data */}
+                                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
+                                        <span className="w-3 h-3 bg-green-500 rounded-full mr-3 flex-shrink-0"></span>
+                                        <div>
+                                            <p className="text-gray-800 font-medium">Application approved for Luxury Beachfront Condo</p>
+                                            <p className="text-sm text-gray-500">2 days ago</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
+                                        <span className="w-3 h-3 bg-blue-500 rounded-full mr-3 flex-shrink-0"></span>
+                                        <div>
+                                            <p className="text-gray-800 font-medium">Saved Modern Downtown Loft</p>
+                                            <p className="text-sm text-gray-500">5 days ago</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center">
+                                        <span className="w-3 h-3 bg-yellow-500 rounded-full mr-3 flex-shrink-0"></span>
+                                        <div>
+                                            <p className="text-gray-800 font-medium">Application submitted for Modern Downtown Loft</p>
+                                            <p className="text-sm text-gray-500">1 week ago</p>
+                                        </div>
+                                    </div>
+                                    {/* End of Placeholder */}
+                                </div>
+                            </>
                         )}
 
-                        {/* ⭐ PERSONAL INFORMATION SECTION - NOW USING SEPARATE COMPONENTS ⭐ */}
                         {activeTab === "personal" && (
                             <div className="space-y-8">
                                 <UpdatePersonalInfoForm />
@@ -318,30 +474,32 @@ export default function ProfilePage() {
                             </div>
                         )}
 
-                        {/* Saved Properties Tab Content */}
                         {activeTab === "saved" && (
                             <>
-                                <h1 className="text-3xl font-bold text-gray-800 mb-6">Saved Properties ({savedProperties.length})</h1>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-6">Saved Properties ({savedPropertiesList.length})</h1>
                                 {loadingSavedProperties && <div className="text-gray-500">Loading saved properties...</div>}
                                 {errorSavedProperties && <div className="text-red-500">{errorSavedProperties}</div>}
 
-                                {!loadingSavedProperties && !errorSavedProperties && savedProperties.length === 0 && (
+                                {!loadingSavedProperties && !errorSavedProperties && savedPropertiesList.length === 0 && (
                                     <div className="text-gray-600 text-center py-10">
                                         You haven't saved any properties yet.
                                     </div>
                                 )}
 
-                                {!loadingSavedProperties && !errorSavedProperties && savedProperties.length > 0 && (
+                                {!loadingSavedProperties && !errorSavedProperties && savedPropertiesList.length > 0 && (
                                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {savedProperties.map((item) => (
+                                        {savedPropertiesList.map((item) => (
                                             <div
                                                 key={item.property._id}
-                                                className="relative bg-gray-50 rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200"
+                                                // Consider making this clickable to property detail page
+                                                className="bg-gray-50 rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200"
                                             >
                                                 <div className="w-full h-40 bg-gray-200 flex items-center justify-center rounded-md mb-3 overflow-hidden">
                                                     {item.property.images && item.property.images.length > 0 ? (
                                                         <img
-                                                            src={`${API_URL}/${item.property.images[0]}`}
+                                                            // ⭐ FIX APPLIED HERE for saved property images ⭐
+                                                            // Using URL constructor for robust path generation
+                                                            src={new URL(item.property.images[0], API_URL).href}
                                                             alt={item.property.title}
                                                             className="w-full h-full object-cover"
                                                         />
@@ -379,27 +537,81 @@ export default function ProfilePage() {
                             </>
                         )}
 
-                        {/* REMOVED: The content for rental-history and payments placeholders */}
-                        {/* activeTab === "rental-history" is now implicitly handled by the lack of a button */}
-                        {/* activeTab === "payments" is now implicitly handled by the lack of a button */}
-
                         {activeTab === "applications" && (
+                            // Placeholder for Applications tab content (you can expand this later)
                             <h2 className="text-3xl font-bold text-gray-800 mb-6">My Applications (Placeholder)</h2>
                         )}
+
                         {activeTab === "messages" && (
-                            <h2 className="text-3xl font-bold text-gray-800 mb-6">My Messages (Placeholder)</h2>
+                            <div className="flex h-[70vh] rounded-lg overflow-hidden border border-gray-200">
+                                {/* Left Pane: Chat List */}
+                                <div className="w-1/3 bg-gray-50 border-r border-gray-200 p-4 flex flex-col">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">My Chats</h2>
+                                    {loadingChats && <div className="text-gray-500 text-center py-4">Loading chats...</div>}
+                                    {errorChats && <div className="text-red-500 text-center py-4">{errorChats}</div>}
+
+                                    {!loadingChats && !errorChats && myChats.length === 0 && (
+                                        <div className="text-gray-600 text-center py-4">
+                                            You have no ongoing chats.
+                                        </div>
+                                    )}
+
+                                    {!loadingChats && !errorChats && myChats.length > 0 && (
+                                        <div className="flex-1 overflow-y-auto pr-2">
+                                            {myChats.map(chat => {
+                                                const otherParticipant = chat.participants.find(p => p._id !== user._id);
+                                                const chatDisplayName = otherParticipant ? otherParticipant.fullName : chat.name || 'Unknown User';
+
+                                                return (
+                                                    <div
+                                                        key={chat._id}
+                                                        onClick={() => setSelectedChatId(chat._id)}
+                                                        className={`p-3 mb-2 rounded-lg cursor-pointer transition-colors duration-200
+                                                            ${selectedChatId === chat._id ? 'bg-[#003366] text-white shadow-md' : 'bg-white hover:bg-blue-50'}`}
+                                                    >
+                                                        <h4 className="font-semibold text-lg">{chatDisplayName}</h4>
+                                                        <p className={`text-sm mt-1 ${selectedChatId === chat._id ? 'text-blue-100' : 'text-gray-600'} truncate`}>
+                                                            {chat.lastMessage || 'No messages yet.'}
+                                                        </p>
+                                                        {chat.lastMessageAt && (
+                                                            <p className={`text-xs mt-1 ${selectedChatId === chat._id ? 'text-blue-200' : 'text-gray-500'}`}>
+                                                                {new Date(chat.lastMessageAt).toLocaleString()}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Right Pane: Chat View Component */}
+                                <div className="w-2/3 p-4 flex flex-col">
+                                    {selectedChatId ? (
+                                        <ChatView selectedChatId={selectedChatId} currentUserId={user._id} />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                            <MessageCircle size={64} className="mb-4 text-gray-400" />
+                                            <p className="text-lg">Select a chat from the left to view messages.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         )}
+
                         {activeTab === "notifications" && (
                             <h2 className="text-3xl font-bold text-gray-800 mb-6">Notifications (Placeholder)</h2>
+                            // Add notification display logic here
                         )}
+
                         {activeTab === "settings" && (
-                            <h2 className="text-3xl font-bold text-gray-800 mb-6">Account Settings (Placeholder)</h2>
+                            <h2 className="text-3xl font-bold text-gray-800 mb-6">Settings (Placeholder)</h2>
+                            // Add general settings options here
                         )}
 
                     </main>
                 </div>
             </div>
-            {/* If you want the footer, keep this line */}
             <Footer />
         </div>
     );
