@@ -145,7 +145,7 @@ exports.sendPasswordResetLink = async (req, res) => {
         );
 
         // Ensure FRONTEND_URL is set in your .env
-        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+        const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
         const subject = 'DreamDwell Password Reset Request';
         const text = `You requested a password reset. Use this link to reset your password: ${resetUrl}`;
