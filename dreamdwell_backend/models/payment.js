@@ -15,12 +15,7 @@ const paymentSchema = mongoose.Schema(
         source: {
             type: String,
             required: true,
-            enum: ['khalti'],
-            default: 'Khalti',
-        },
-        source_payment_id: {
-            type: String,
-            required: true,
+            enum: ['khalti', 'esewa'],
         },
         amount: {
             type: Number,
@@ -31,6 +26,10 @@ const paymentSchema = mongoose.Schema(
             type: String,
             enum: ['pending', 'completed', 'failed'],
             default: 'pending',
+        },
+        verification_data: {
+            type: mongoose.Schema.Types.Mixed,
+            required: false,
         }
     },
     {
