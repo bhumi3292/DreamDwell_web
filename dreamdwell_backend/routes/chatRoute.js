@@ -13,3 +13,4 @@ router.get("/:chatId", authenticateUser, chatController.getChatById); // Route t
 router.get("/:chatId/messages", authenticateUser, chatController.getMessagesForChat);
 
 module.exports = router;
+
