@@ -3,19 +3,15 @@
 const Availability = require('../models/calendar'); // Your Availability model
 const Booking = require('../models/Booking'); // Your Booking model
 const Property = require('../models/Property'); // Your Property model
-const User = require('../models/User'); // Your User model
+const User = require('../models/User');
 
-// Helper function to normalize date to YYYY-MM-DD string for consistency
-// This is crucial for matching dates across Booking and Availability models
 const normalizeDateString = (dateInput) => {
     const d = new Date(dateInput);
     d.setUTCHours(0, 0, 0, 0); // Normalize to UTC midnight to avoid timezone issues
     return d.toISOString().split('T')[0]; // Return as 'YYYY-MM-DD' string
 };
 
-// @desc    Create/Update Availability for a Landlord
-// @route   POST /api/calendar/availabilities
-// @access  Private (Landlord)
+
 exports.createAvailability = async (req, res) => {
     const { propertyId, date, timeSlots } = req.body;
     const landlordId = req.user._id;

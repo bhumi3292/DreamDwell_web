@@ -21,7 +21,26 @@ const storage = multer.diskStorage({
 // It should only appear ONCE.
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 1024 * 1024 * 1024 },
+    limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB limit is very large, consider reducing if not strictly needed
+   // fileFilter: (req, file, cb) => {
+        // Expanded filetypes to include heic and webp
+        // const filetypes = /jpeg|jpg|png|gif|heic|webp/; // Added heic and webp
+
+        // const mimetype = filetypes.test(file.mimetype);
+        // const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        // Diagnostic logs (keep these for debugging, remove in production if not needed)
+        // console.log('DEBUG (Backend): Received file.mimetype:', file.mimetype);
+        // console.log('DEBUG (Backend): Received file.originalname extension:', path.extname(file.originalname).toLowerCase());
+        // console.log('DEBUG (Backend): mimetype test result:', mimetype);
+        // console.log('DEBUG (Backend): extname test result:', extname);
+
+    //     if (mimetype && extname) {
+    //         return cb(null, true);
+    //     }
+    //     // Update the error message to reflect newly supported types
+    //     cb(new Error('Error: File upload only supports JPEG, JPG, PNG, GIF, HEIC, and WebP images.'));
+    // }
 });
 
 // ===============================================
@@ -41,7 +60,8 @@ router.post('/change-password', authenticateUser, authController.changePassword)
 
 router.put('/update-profile', authenticateUser, authController.updateProfile);
 
-
+// Image Upload Route - THIS IS THE RELEVANT SECTION. IT IS ALREADY A POST.
+// Frontend needs to send a POST request to this endpoint.
 router.post('/uploadImage', authenticateUser, upload.single('profilePicture'), async (req, res) => {
     // console.log(req.file) // Uncomment if you want to see multer's file object
 
@@ -69,7 +89,7 @@ router.post('/uploadImage', authenticateUser, upload.single('profilePicture'), a
             success: true,
             message: 'Profile picture uploaded successfully',
             imageUrl: imageUrl, // Confirm the path that was saved
-            user: updatedUser
+            user: updatedUser // Return the updated user object (without password)
         });
 
     } catch (error) {

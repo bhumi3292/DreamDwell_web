@@ -46,7 +46,9 @@ app.use("/api/category", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 
 // --- IMPORTANT: Corrected Payment Route Usage ---
-app.use('/api/payments', paymentRoutes);
+app.use('/api/payments', paymentRoutes); // <<< NEW AND CORRECT USAGE.
+                                         // This makes your endpoints like /api/payments/initiate,
+                                         // /api/payments/verify/khalti, etc.
 
 
 app.use('/api/calendar', calendarRoutes);
@@ -109,6 +111,8 @@ app.use((err, req, res, next) => {
     });
 });
 
+// ⭐ EXPORT THE APP INSTANCE ⭐
+// This is the key change for Supertest to work correctly.
 module.exports = app;
 
 // ========== Conditional Server Start & Socket.IO Setup ==========

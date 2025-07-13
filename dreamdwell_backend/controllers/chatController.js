@@ -1,10 +1,12 @@
 // dreamdwell_backend/controllers/chat.controller.js
-const Chat = require('../models/chat');
-const User = require('../models/User');
-const Property = require('../models/Property');
+const Chat = require('../models/chat'); // Corrected import to just 'chat'
+const User = require('../models/User'); // Assuming user.model.js (lowercase u)
+const Property = require('../models/Property'); // Assuming property.model.js (lowercase p)
 const { asyncHandler } = require('../utils/asyncHandler');
 
-
+// @desc    Create a new one-to-one chat or retrieve an existing one
+// @route   POST /api/chats/create-or-get
+// @access  Protected
 exports.createOrGetChat = asyncHandler(async (req, res) => {
     const currentUserId = req.user._id;
     const { otherUserId, propertyId } = req.body;
@@ -53,7 +55,9 @@ exports.createOrGetChat = asyncHandler(async (req, res) => {
     return res.status(200).json({ success: true, message: "Existing chat retrieved.", data: chat });
 });
 
-
+// @desc    Get all chats for the authenticated user
+// @route   GET /api/chats
+// @access  Protected
 exports.getMyChats = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
@@ -65,14 +69,18 @@ exports.getMyChats = asyncHandler(async (req, res) => {
     return res.status(200).json({ success: true, data: chats });
 });
 
+// @desc    Get a single chat by ID (including all its messages)
+// @route   GET /api/chats/:chatId
+// @access  Protected (user must be a participant)
 exports.getChatById = asyncHandler(async (req, res) => {
     const chatId = req.params.chatId;
     const userId = req.user._id;
 
+    // Populate participants and property, and also populate sender for each message in the messages array
     const chat = await Chat.findById(chatId)
         .populate('participants', 'fullName profilePicture')
         .populate('property', 'title imageUrls')
-        .populate('messages.sender', 'fullName profilePicture')
+        .populate('messages.sender', 'fullName profilePicture') // ⭐ CRITICAL: Populate sender in sub-documents ⭐
         .sort({ "messages.createdAt": 1 }); // Sort messages by creation time
 
     if (!chat) {
@@ -87,6 +95,10 @@ exports.getChatById = asyncHandler(async (req, res) => {
     return res.status(200).json({ success: true, data: chat });
 });
 
+
+// @desc    Get messages for a specific chat (adapted from your old message.controller)
+// @route   GET /api/chats/:chatId/messages -- You can use this route or just get all messages with getChatById
+// @access  Protected (user must be a participant)
 exports.getMessagesForChat = asyncHandler(async (req, res) => {
     const chatId = req.params.chatId;
     const userId = req.user._id;
@@ -99,6 +111,7 @@ exports.getMessagesForChat = asyncHandler(async (req, res) => {
         return res.status(404).json({ success: false, message: "Chat not found." });
     }
 
+    // Authorize: Ensure the authenticated user is one of the participants
     if (!chat.participants.some(p => p._id.toString() === userId.toString())) {
         return res.status(403).json({ success: false, message: "Not authorized to access messages in this chat." });
     }

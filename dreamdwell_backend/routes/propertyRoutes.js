@@ -41,7 +41,7 @@ router.delete(
     '/:id',
     authenticateUser,
     isLandlord,
-    deleteProperty
+    deleteProperty // Delete logic is now in the controller
 );
 
 module.exports = router;

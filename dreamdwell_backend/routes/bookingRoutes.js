@@ -12,7 +12,7 @@ const { protect } = require("../middlewares/auth");
 const roleCheck = require("../middlewares/role");
 
 const requireTenant = roleCheck("Tenant");
-// const requireLandlord = roleCheck("Landlord");
+// const requireLandlord = roleCheck("Landlord"); // Uncomment when needed
 
 // Routes
 router.post("/create", protect, requireTenant, createBooking);
