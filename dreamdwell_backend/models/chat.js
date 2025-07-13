@@ -42,14 +42,14 @@ const chatSchema = new mongoose.Schema(
             type: String,
             default: ""
         },
-        lastMessageAt: { // This field can store the timestamp of the last message for sorting
+        lastMessageAt: {
             type: Date,
             default: Date.now
         },
-        messages: [messageSubSchema] // ⭐ CRITICAL: Array of messages as sub-documents ⭐
+        messages: [messageSubSchema]
     },
     {
-        timestamps: true // This provides `createdAt` and `updatedAt` for the chat document itself
+        timestamps: true
     }
 );
 
