@@ -12,7 +12,6 @@ const BookingSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    // ⭐ NEW: Add landlord field to easily query landlord's bookings ⭐
     landlord: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',
