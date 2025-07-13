@@ -1,94 +1,190 @@
-const Payment = require('../../models/payment');
-const Property = require('../../models/Property');
+require('dotenv').config();
+const Payment = require('../../models/payment'); // Adjust path as needed
 const axios = require('axios');
+const crypto = require('crypto');
 
-
+// Get secret keys from environment variables
 const KHALTI_SECRET_KEY = process.env.KHALTI_SECRET_KEY;
+const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY;
+const ESEWA_MERCHANT_CODE = process.env.ESEWA_MERCHANT_CODE;
+const KHALTI_VERIFY_URL = process.env.KHALTI_VERIFY_URL;
+const ESEWA_VERIFY_URL = process.env.ESEWA_VERIFY_URL;
 
+// Helper to generate eSewa signature
+const generateEsewaSignature = (data) => {
+    const message = `total_amount=${data.amount},transaction_uuid=${data.source_payment_id},product_code=${ESEWA_MERCHANT_CODE}`; // Adjust fields as per eSewa documentation if needed
+    const hmac = crypto.createHmac('sha256', ESEWA_SECRET_KEY);
+    hmac.update(message);
+    return hmac.digest('base64');
+};
 
-// @desc    Create a new Payment record and verify with Khalti
-// @route   POST /api/payments
-// @access  Private (Requires authentication via authenticateUser middleware)
-exports.createPayment = async (req, res) => {
+const initiatePayment = async (req, res) => {
+    const { user, property, source, amount } = req.body;
 
-    const { propertyId, source, source_payment_id, amount } = req.body;
-
-    const userId = req.user._id;
-
-    if (!userId || !propertyId || !source || !source_payment_id || amount === undefined || amount <= 0) {
-        return res.status(400).json({
-            success: false,
-            message: 'Missing or invalid required payment fields (userId, propertyId, source, source_payment_id, amount).',
-        });
+    if (!user || !property || !source || !amount) {
+        return res.status(400).json({ message: 'Missing required fields' });
     }
 
     try {
+        const payment = new Payment({
+            user,
+            property,
+            source,
+            amount,
+            status: 'pending', // Initial status
+            // source_payment_id will be added after actual payment initiation and before verification
+        });
 
-        const khaltiVerificationResponse = await axios.post(
-            'https://khalti.com/api/v2/payment/verify/',
+        const createdPayment = await payment.save();
+        res.status(201).json(createdPayment);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error during payment initiation' });
+    }
+};
+
+// @desc    Verify Khalti payment
+// @route   POST /api/payments/verify/khalti
+// @access  Public (Khalti will send a callback)
+const verifyKhaltiPayment = async (req, res) => {
+    const { token, amount, idx, pidx, status, transaction_id, purchase_order_id } = req.body;
+
+    // Check if essential verification data is present
+    if (!token || !amount || !idx) {
+        return res.status(400).json({ message: 'Missing Khalti verification data (token, amount, or idx)' });
+    }
+
+    try {
+        // Find the payment record in your database using a relevant identifier
+        // This is crucial: You need a way to link the Khalti callback to your payment record.
+        // For example, if you passed your internal payment ID as a purchase_order_id to Khalti.
+        const payment = await Payment.findOne({ source_payment_id: idx, source: 'khalti' }); // Or use purchase_order_id if you mapped it
+        if (!payment) {
+            console.warn(`Khalti callback: Payment record not found for idx: ${idx}`);
+            return res.status(404).json({ message: 'Payment record not found.' });
+        }
+
+        // Khalti server-to-server verification
+        const khaltiResponse = await axios.post(
+            KHALTI_VERIFY_URL,
             {
-                token: source_payment_id,
-                amount: amount * 100,
+                token: token,
+                amount: amount, // Khalti expects amount in paisa, ensure consistency
             },
             {
                 headers: {
-                    Authorization: `Key ${KHALTI_SECRET_KEY}`,
+                    'Authorization': `Key ${KHALTI_SECRET_KEY}`,
                     'Content-Type': 'application/json',
                 },
             }
         );
 
-        if (khaltiVerificationResponse.data.idx !== source_payment_id || khaltiVerificationResponse.data.amount !== (amount * 100)) {
-            console.error("Khalti verification mismatch:", {
-                expectedIdx: source_payment_id,
-                receivedIdx: khaltiVerificationResponse.data.idx,
-                expectedAmount: amount * 100,
-                receivedAmount: khaltiVerificationResponse.data.amount
-            });
-            return res.status(400).json({
-                success: false,
-                message: 'Payment verification failed: Mismatched transaction details with Khalti.',
-            });
+        const khaltiData = khaltiResponse.data;
+        console.log('Khalti Verification Response:', khaltiData);
+
+        if (khaltiData.status === 'Completed' && khaltiData.transaction_id) {
+            payment.status = 'completed';
+            payment.verification_data = khaltiData;
+            payment.source_payment_id = idx; // Ensure source_payment_id is set
+            await payment.save();
+            res.status(200).json({ message: 'Khalti payment verified and completed', payment });
+        } else if (khaltiData.status === 'Failed' || khaltiData.status === 'Error') {
+            payment.status = 'failed';
+            payment.verification_data = khaltiData;
+            await payment.save();
+            res.status(400).json({ message: 'Khalti payment verification failed', payment });
+        } else {
+            // Handle other Khalti statuses like 'Pending', 'Initiated', 'Refunded'
+            payment.status = 'pending'; // Or other appropriate status
+            payment.verification_data = khaltiData;
+            await payment.save();
+            res.status(202).json({ message: `Khalti payment status: ${khaltiData.status}`, payment });
         }
 
-        // 6. (Optional but Recommended) Check if the property actually exists
-        const property = await Property.findById(propertyId);
-        if (!property) {
-            return res.status(404).json({ success: false, message: 'Property not found for this payment.' });
-        }
-
-        const payment = new Payment({
-            user: userId,
-            property: propertyId,
-            source: source,
-            source_payment_id: source_payment_id,
-            amount: amount,
-            status: 'completed',
-        });
-
-        const createdPayment = await payment.save();
-
-
-        res.status(201).json({
-            success: true,
-            message: "Payment successfully verified and recorded.",
-            data: createdPayment,
-        });
-
-    } catch (err) {
-        console.error("Error in createPayment:", err.response?.data || err.message);
-
-        if (err.response && err.response.status === 400) {
-            return res.status(400).json({
-                success: false,
-                message: err.response.data?.detail || 'Khalti payment verification failed.',
-                error: err.response.data,
-            });
-        }
-        return res.status(500).json({
-            success: false,
-            message: 'Server error: Could not process payment.',
-            error: err.message,
-        });
+    } catch (error) {
+        console.error('Error verifying Khalti payment:', error.response ? error.response.data : error.message);
+        res.status(500).json({ message: 'Server error during Khalti payment verification', error: error.response ? error.response.data : error.message });
     }
+};
+
+
+// @desc    Verify eSewa payment
+// @route   POST /api/payments/verify/esewa
+// @access  Public (eSewa will send a callback)
+const verifyEsewaPayment = async (req, res) => {
+    // eSewa usually redirects with parameters in the URL for success/failure.
+    // The actual verification typically happens on your server using their API.
+    // The exact parameters from eSewa's callback might vary,
+    // so adjust `req.body` or `req.query` accordingly.
+    // Common parameters include `oid` (order ID), `amt` (amount), `refId` (reference ID).
+    const { oid, amt, refId } = req.body; // Or req.query, depending on eSewa's callback method
+
+    if (!oid || !amt || !refId) {
+        return res.status(400).json({ message: 'Missing eSewa verification data' });
+    }
+
+    try {
+        // Find the payment record in your database using your order ID (oid)
+        const payment = await Payment.findOne({ source_payment_id: oid, source: 'esewa' });
+        if (!payment) {
+            console.warn(`eSewa callback: Payment record not found for oid: ${oid}`);
+            return res.status(404).json({ message: 'Payment record not found.' });
+        }
+
+        // Ensure the amount matches
+        if (payment.amount !== parseFloat(amt)) { // Convert amt to number if it comes as string
+            payment.status = 'failed';
+            payment.verification_data = {
+                message: 'Amount mismatch',
+                received_amount: parseFloat(amt),
+                expected_amount: payment.amount,
+                esewa_ref_id: refId
+            };
+            await payment.save();
+            return res.status(400).json({ message: 'Amount mismatch during eSewa verification', payment });
+        }
+
+        // eSewa server-to-server verification (using the status check API)
+        const esewaResponse = await axios.post(
+            ESEWA_VERIFY_URL,
+            {
+                amt: amt,
+                rid: refId, // eSewa reference ID
+                pid: oid, // Your product/order ID
+                scd: ESEWA_MERCHANT_CODE, // Your merchant code
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        const esewaData = esewaResponse.data;
+        console.log('eSewa Verification Response:', esewaData);
+
+
+        if (esewaData.status === 'COMPLETE' && esewaData.transaction_uuid === oid) { // Adjust conditions based on actual eSewa response
+            payment.status = 'completed';
+            payment.verification_data = esewaData;
+            payment.source_payment_id = oid; // Ensure source_payment_id is set
+            await payment.save();
+            res.status(200).json({ message: 'eSewa payment verified and completed', payment });
+        } else {
+            payment.status = 'failed';
+            payment.verification_data = esewaData;
+            await payment.save();
+            res.status(400).json({ message: 'eSewa payment verification failed or is not complete', payment });
+        }
+
+    } catch (error) {
+        console.error('Error verifying eSewa payment:', error.response ? error.response.data : error.message);
+        res.status(500).json({ message: 'Server error during eSewa payment verification', error: error.response ? error.response.data : error.message });
+    }
+};
+
+module.exports = {
+    initiatePayment,
+    verifyKhaltiPayment,
+    verifyEsewaPayment,
 };
