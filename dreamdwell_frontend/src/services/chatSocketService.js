@@ -100,6 +100,18 @@ class ChatSocketService {
     offMessageError(callback) {
         this.errorListeners = this.errorListeners.filter(listener => listener !== callback);
     }
+
+    // Typing indicator support
+    emitTyping(chatId, senderId) {
+        if (this.isConnected) {
+            this.socket.emit('typing', { chatId, senderId });
+        }
+    }
+
+    onTyping(callback) {
+        this.socket.on('typing', callback);
+        return () => this.socket.off('typing', callback);
+    }
 }
 
 const chatSocketService = new ChatSocketService();

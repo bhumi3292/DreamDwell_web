@@ -2,6 +2,16 @@
 
 import axios from './axiosInstance';
 
+/**
+ * Initiates an eSewa payment. This API endpoint is designed to be generic,
+ * but the backend should interpret the payment context based on the payload.
+ *
+ * @param {string} propertyId - The ID of the property.
+ * @param {number} amount - The amount to be paid.
+ * @param {object} [additionalDetails] - Optional object for context-specific data.
+ * - For booking: { bookingStartDate: 'YYYY-MM-DD', bookingEndDate: 'YYYY-MM-DD', context: 'booking' }
+ * - For listing fee: { productName: 'Premium Listing', context: 'premium_listing' }
+ */
 export const initiateEsewaPaymentApi = async (propertyId, amount, additionalDetails = {}) => {
     try {
         // The backend endpoint `/api/payments/initiate` will need to be smart enough

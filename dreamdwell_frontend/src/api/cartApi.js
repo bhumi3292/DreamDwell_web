@@ -8,13 +8,15 @@ export const getCartApi = async () => {
 };
 
 export const addToCartApi = async (propertyId) => {
-
+    // ⭐ CORRECTION HERE: Change '/api/cart' to '/api/cart/add' ⭐
+    // Backend: router.post('/add', cartController.addToCart);
     return await api.post('/api/cart/add', { propertyId });
 };
 
 export const removeFromCartApi = async (propertyId) => {
-
-    return await api.delete(`/api/cart/remove/${propertyId}`);
+    // Backend: router.delete('/remove/:propertyId', cartController.removeFromCart);
+    // Correct. This matches DELETE /api/cart/remove/:propertyId
+    return await api.delete(`/api/cart/remove/${propertyId}`); // ⭐ Correction: Added '/remove/' ⭐
 };
 
 export const clearCartApi = async () => {
