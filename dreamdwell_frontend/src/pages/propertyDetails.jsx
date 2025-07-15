@@ -7,6 +7,8 @@ import { FiHeart } from 'react-icons/fi';
 import { AuthContext } from '../auth/AuthProvider';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import CryptoJS from 'crypto-js';
+import {v4 as uuidv4} from 'uuid';
 
 import { MapPin, Maximize2, Phone, Mail, Home, DollarSign, User, ChevronLeft, ChevronRight, CreditCard, Calendar as CalendarIcon, MessageSquare } from 'lucide-react';
 
@@ -15,7 +17,9 @@ import { useKhaltiPayment } from '../hooks/payment/useKhaltiPayment.js';
 import BookingModal from '../components/bookingComponents.jsx';
 import LandlordManageAvailabilityModal from '../components/LandlordManageAvailabilityModal.jsx';
 
-import { getFullMediaUrl } from '../utils/mediaUrlHelper.js'; // Import the new media URL helper
+import { getFullMediaUrl } from '../utils/mediaUrlHelper.js';
+import PaymentSelectionModal from "../components/payment/PaymentSelectionModal.jsx"; // Import the new media URL helper
+import { createOrGetChat } from '../api/chatApi';
 
 
 const copyToClipboard = (text, message) => {
@@ -26,6 +30,7 @@ export default function PropertyDetail() {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const [paymentModel,setPaymentModel] = useState(false);
 
     const { isAuthenticated, user, loading: isLoadingAuth } = useContext(AuthContext);
 
@@ -122,20 +127,57 @@ export default function PropertyDetail() {
         }
     };
 
+    const handleEsewaPayment = () => {
+        // setIsProcessing(true)
+
+        const transaction_uuid = uuidv4(); // or use uuid v4 if required
+        console.log(transaction_uuid)
+        const product_code = "EPAYTEST"
+        const total_amount = property?.price.toFixed(2) // You must match this exactly as in the string
+        const signed_field_names = "total_amount,transaction_uuid,product_code"
+
+        const signingString = `total_amount=${total_amount},transaction_uuid=${transaction_uuid},product_code=${product_code}`
+        const secret = "8gBm/:&EnhH.1/q" // ← UAT secret key from eSewa. DO NOT USE IN PRODUCTION FRONTEND.
+
+        const signature = CryptoJS.HmacSHA256(signingString, secret).toString(CryptoJS.enc.Base64)
+
+        const fields = {
+            amount: property?.price.toFixed(2),
+            tax_amount: "0",
+            total_amount: total_amount,
+            transaction_uuid: transaction_uuid,
+            product_code: product_code,
+            product_service_charge: "0",
+            product_delivery_charge: "0",
+            success_url: "https://developer.esewa.com.np/success",
+            failure_url: "https://developer.esewa.com.np/failure",
+            signed_field_names: signed_field_names,
+            signature: signature,
+        }
+
+        const form = document.createElement("form")
+        form.setAttribute("method", "POST")
+        form.setAttribute("action", "https://rc-epay.esewa.com.np/api/epay/main/v2/form")
+
+        Object.entries(fields).forEach(([key, value]) => {
+            const input = document.createElement("input")
+            input.setAttribute("type", "hidden")
+            input.setAttribute("name", key)
+            input.setAttribute("value", value)
+            form.appendChild(input)
+        })
+
+        document.body.appendChild(form)
+        form.submit()
+    }
+
     // Handle payment
     const handlePayment = () => {
-        if (!isAuthenticated) {
-            toast.warn('Please log in to make a payment.');
-            return;
-        }
-        if (!property?._id || !property?.price || property.price <= 0) {
-            toast.error('Property details are missing or price is invalid for payment.');
-            return;
-        }
-        initiateKhaltiPayment();
+        setPaymentModel(true);
+
     };
 
-    const handleChatLandlord = () => {
+    const handleChatLandlord = async () => {
         if (!isAuthenticated) {
             toast.warn('Please log in to chat with the landlord.');
             return;
@@ -144,15 +186,12 @@ export default function PropertyDetail() {
             toast.error('Landlord information is missing. Cannot start chat.');
             return;
         }
-
-        navigate('/chat', {
-            state: {
-                recipientId: property.landlord._id,
-                recipientName: property.landlord.fullName || 'Landlord',
-                propertyName: property.title,
-                propertyId: property._id,
-            }
-        });
+        try {
+            const chat = await createOrGetChat(property.landlord._id, property._id);
+            navigate('/chat', { state: { preselectChatId: chat._id } });
+        } catch (err) {
+            toast.error(err.message || 'Failed to start chat.');
+        }
     };
 
     // New handler for WhatsApp chat
@@ -329,7 +368,7 @@ export default function PropertyDetail() {
                             className={`mt-6 w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center font-bold shadow-md transform hover:scale-105 transition-all duration-200 ${isProcessingPayment ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
                             <CreditCard size={24} className="mr-3" />
-                            {isProcessingPayment ? 'Processing Payment...' : 'Make Payment'}
+                            { 'Make Payment'}
                         </button>
 
                         {/* Conditional Calendar Button: opens appropriate modal based on user role */}
@@ -388,6 +427,21 @@ export default function PropertyDetail() {
                     propertyId={property._id}
                 />
             )}
+            {paymentModel && (
+                <PaymentSelectionModal
+                    show={paymentModel}
+                    onClose={() => setPaymentModel(false)}
+                    onSelectPaymentMethod={(method) => {
+                        if (method === 'khalti') {
+
+                            initiateKhaltiPayment(); // Start Khalti payment
+                        } else if(method === 'esewa') {
+                            handleEsewaPayment()
+                        }
+                    }}
+                />
+            )}
+
         </div>
     );
 }
