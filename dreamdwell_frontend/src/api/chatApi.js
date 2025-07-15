@@ -2,7 +2,7 @@
 import api from "./api";
 export const createOrGetChat = async (otherUserId, propertyId = null) => {
     try {
-        const response = await api.post(`/chats/create-or-get`, {
+        const response = await api.post(`/api/chats/create-or-get`, {
             otherUserId,
             propertyId,
         });
@@ -15,7 +15,7 @@ export const createOrGetChat = async (otherUserId, propertyId = null) => {
 
 export const getMyChats = async () => {
     try {
-        const response = await api.get(`/chats`);
+        const response = await api.get(`/api/chats`);
         return response.data.data;
     } catch (error) {
         console.error("API error fetching user chats:", error);
@@ -25,7 +25,7 @@ export const getMyChats = async () => {
 
 export const getChatById = async (chatId) => {
     try {
-        const response = await api.get(`/chats/${chatId}`);
+        const response = await api.get(`/api/chats/${chatId}`);
         return response.data.data;
     } catch (error) {
         console.error(`API error fetching chat ${chatId}:`, error);
@@ -35,7 +35,7 @@ export const getChatById = async (chatId) => {
 
 export const getMessagesForChat = async (chatId) => {
     try {
-        const response = await api.get(`/chats/${chatId}/messages`);
+        const response = await api.get(`/api/chats/${chatId}/messages`);
         return response.data.data;
     } catch (error) {
         console.error(`API error fetching messages for chat ${chatId}:`, error);
