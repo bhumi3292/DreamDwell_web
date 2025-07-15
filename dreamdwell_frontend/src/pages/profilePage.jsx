@@ -5,16 +5,15 @@ import { AuthContext } from "../auth/AuthProvider";
 import { toast } from "react-toastify";
 import {
     User, Camera, Edit, Heart, MessageCircle, Settings, Clock, Home as HomeIcon, BellDot, Trash2,
-    LayoutDashboard, CalendarDays // Import CalendarDays for applications/bookings
+    LayoutDashboard, CalendarDays
 } from "lucide-react";
 
 import Header from "../layouts/navbar"; // Assuming Navbar is now Header as per the code
-import Footer from "../layouts/footer";
 
 import { useUploadProfilePicture } from "../hooks/useAuthHooks";
 // Ensure these imports are from the correct place
 import { getCartService, removeFromCartService } from '../services/cartService.js';
-import { API_URL } from '../api/api.js'; // Centralized API_URL import
+import { API_URL } from '../api/api.js';
 
 import UpdatePersonalInfoForm from '../components/profile/UpdatePersonalInfoForm';
 import ChangePasswordForm from '../components/profile/ChangePasswordForm';
@@ -382,24 +381,7 @@ export default function ProfilePage() {
                                 <MessageCircle className="h-5 w-5 mr-3" />
                                 Messages
                             </button>
-                            <button
-                                type="button"
-                                className={getSidebarButtonClasses("notifications")}
-                                onClick={() => setActiveTab("notifications")}
-                                aria-current={activeTab === "notifications" ? "page" : undefined}
-                            >
-                                <BellDot className="h-5 w-5 mr-3" />
-                                Notifications
-                            </button>
-                            <button
-                                type="button"
-                                className={getSidebarButtonClasses("settings")}
-                                onClick={() => setActiveTab("settings")}
-                                aria-current={activeTab === "settings" ? "page" : undefined}
-                            >
-                                <Settings className="h-5 w-5 mr-3" />
-                                Settings
-                            </button>
+
                         </nav>
                     </aside>
 
@@ -612,7 +594,6 @@ export default function ProfilePage() {
                     </main>
                 </div>
             </div>
-            <Footer />
         </div>
     );
 }
