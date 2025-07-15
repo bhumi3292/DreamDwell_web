@@ -2,9 +2,9 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-require("dotenv").config(); // Load environment variables from .env file
+require("dotenv").config();
 const mongoose = require("mongoose");
-const multer = require("multer"); // Keep multer imported for error handling
+const multer = require("multer");
 
 const connectDB = require("./config/db");
 const ApiError = require("./utils/api_error");
