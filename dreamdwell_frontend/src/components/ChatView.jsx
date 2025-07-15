@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import { useChat } from '../hooks/useChat.js'; // ⭐ UNCOMMENT AND ENSURE .jsx EXTENSION ⭐
 import { AuthContext } from '../auth/AuthProvider';
 import { toast } from 'react-toastify'; // ⭐ ADD THIS IMPORT ⭐
+import chatSocketService from '../services/chatSocketService';
+import { getFullMediaUrl } from '../utils/mediaUrlHelper';
 
 function ChatView({ selectedChatId, currentUserId }) {
     // currentUserId is already being passed from ProfilePage, but also get user from context
@@ -22,7 +24,33 @@ function ChatView({ selectedChatId, currentUserId }) {
     } = useChat(selectedChatId, senderIdForMessages);
 
     const [messageInput, setMessageInput] = useState('');
+    const [isOtherTyping, setIsOtherTyping] = useState(false);
     const messagesEndRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
+
+    // Typing indicator: emit typing event
+    useEffect(() => {
+        if (!selectedChatId || !senderIdForMessages) return;
+        if (!messageInput) return;
+        chatSocketService.emitTyping(selectedChatId, senderIdForMessages);
+    }, [messageInput, selectedChatId, senderIdForMessages]);
+
+    // Listen for typing events from the other user
+    useEffect(() => {
+        if (!selectedChatId || !senderIdForMessages) return;
+        const handleTyping = ({ chatId, senderId }) => {
+            if (chatId === selectedChatId && senderId !== senderIdForMessages) {
+                setIsOtherTyping(true);
+                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                typingTimeoutRef.current = setTimeout(() => setIsOtherTyping(false), 2000);
+            }
+        };
+        const cleanup = chatSocketService.onTyping(handleTyping);
+        return () => {
+            cleanup();
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        };
+    }, [selectedChatId, senderIdForMessages]);
 
     // Scroll to bottom on new messages
     useEffect(() => {
@@ -46,15 +74,37 @@ function ChatView({ selectedChatId, currentUserId }) {
     // If selectedChatId is present but chatData isn't, it might mean the chat doesn't exist or permissions issue
     if (selectedChatId && !chatData) return <div className="text-gray-500 text-center py-8">No chat data found for the selected chat.</div>;
 
+    // Find the other participant (landlord or chat partner)
+    const otherParticipant = chatData?.participants?.find(p => p._id !== senderIdForMessages);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <h3 className="text-xl font-semibold text-gray-800 mb-3 border-b pb-2">
-                Chat with: {chatData.participants
-                ?.filter(p => p._id !== senderIdForMessages)
-                .map(p => p.fullName)
-                .join(', ') || chatData.name || 'Unknown Chat'}
-            </h3>
+            {/* Chat header with landlord/avatar info */}
+            <div className="flex items-center mb-3 border-b pb-2">
+                {otherParticipant?.profilePicture ? (
+                    <img
+                        src={getFullMediaUrl(otherParticipant.profilePicture)}
+                        alt={otherParticipant.fullName}
+                        className="w-10 h-10 rounded-full mr-3 border"
+                        style={{ objectFit: 'cover' }}
+                    />
+                ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-300 mr-3 flex items-center justify-center text-lg text-gray-600">
+                        {otherParticipant?.fullName ? otherParticipant.fullName[0] : '?'}
+                    </div>
+                )}
+                <div>
+                    <div className="font-semibold text-lg text-gray-800">
+                        {otherParticipant?.fullName || 'Unknown User'}
+                    </div>
+                    {otherParticipant?.email && (
+                        <div className="text-sm text-gray-500">{otherParticipant.email}</div>
+                    )}
+                    {otherParticipant?.phoneNumber && (
+                        <div className="text-sm text-gray-500">{otherParticipant.phoneNumber}</div>
+                    )}
+                </div>
+            </div>
             <div className="flex-1 overflow-y-auto p-2 bg-gray-50 rounded-md mb-3" style={{ border: '1px solid #e0e0e0' }}>
                 {messages.length === 0 ? (
                     <p className="text-gray-600 text-center py-4">No messages yet. Start the conversation!</p>
@@ -63,11 +113,26 @@ function ChatView({ selectedChatId, currentUserId }) {
                         <div
                             key={message._id || message.isOptimistic ? message._id : `temp-${Math.random()}`}
                             style={{
-                                textAlign: message.sender._id === senderIdForMessages ? 'right' : 'left',
+                                display: 'flex',
+                                flexDirection: message.sender._id === senderIdForMessages ? 'row-reverse' : 'row',
+                                alignItems: 'flex-end',
                                 margin: '8px 0',
                                 opacity: message.isOptimistic ? 0.7 : 1,
                             }}
                         >
+                            {/* Avatar */}
+                            {message.sender.profilePicture ? (
+                                <img
+                                    src={getFullMediaUrl(message.sender.profilePicture)}
+                                    alt={message.sender.fullName}
+                                    className="w-8 h-8 rounded-full mx-2 border"
+                                    style={{ objectFit: 'cover' }}
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-gray-300 mx-2 flex items-center justify-center text-xs text-gray-600">
+                                    {message.sender.fullName ? message.sender.fullName[0] : '?'}
+                                </div>
+                            )}
                             <span className={`inline-block p-2 rounded-lg max-w-[70%] ${
                                 message.sender._id === senderIdForMessages ? 'bg-[#003366] text-white' : 'bg-gray-200 text-gray-800'
                             }`}>
@@ -83,6 +148,18 @@ function ChatView({ selectedChatId, currentUserId }) {
                 )}
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* Typing indicator just above the input, with animated dots */}
+            {isOtherTyping && (
+                <div className="flex items-center mb-2 ml-2 text-gray-500 text-sm italic">
+                    <span>The other user is typing</span>
+                    <span className="ml-1 flex">
+                        <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+                    </span>
+                </div>
+            )}
 
             <form onSubmit={handleSendMessage} className="flex">
                 <input
