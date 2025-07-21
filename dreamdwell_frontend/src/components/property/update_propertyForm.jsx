@@ -8,8 +8,9 @@ import { FiUploadCloud, FiMapPin } from 'react-icons/fi';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCategoriesApi } from '../../api/categoryApi.js';
 import { useFetchOneProperty, useUpdateProperty } from '../../hooks/propertyHook/usePropertyActions.js';
+import { VITE_API_BASE_URL } from '../../utils/env';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+const API_BASE_URL = VITE_API_BASE_URL || "http://localhost:3001";
 
 export default function UpdatePropertyForm() {
     const { id } = useParams();

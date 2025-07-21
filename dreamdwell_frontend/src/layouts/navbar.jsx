@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import { FaShoppingCart, FaCaretDown } from "react-icons/fa";
 import { CgProfile } from "react-icons/cg";
-import { AuthContext } from "../auth/authProvider";
+import { AuthContext } from "../auth/AuthProvider.jsx";
 import { toast } from "react-toastify";
 import { getCartService } from "../services/cartService";
 

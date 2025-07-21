@@ -210,7 +210,7 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-// ⭐ NEW: Change Password (for logged-in users) ⭐
+
 exports.changePassword = async (req, res) => {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
 
@@ -260,6 +260,7 @@ exports.updateProfile = async (req, res) => {
     // `req.user` is populated by the `authenticateUser` middleware
     const userId = req.user._id;
     const { fullName, email, phoneNumber } = req.body;
+    console.log(req.body)
 
     try {
         const user = await User.findById(userId);
@@ -280,15 +281,11 @@ exports.updateProfile = async (req, res) => {
         if (fullName !== undefined && fullName !== user.fullName) user.fullName = fullName;
         if (email !== undefined && email !== user.email) user.email = email;
         if (phoneNumber !== undefined && phoneNumber !== user.phoneNumber) user.phoneNumber = phoneNumber;
+        await user.save();
 
         // Only save if there were actual changes to avoid unnecessary writes
-        const modifiedPaths = user.isModified();
-        if (modifiedPaths.length > 0) {
-            await user.save();
-        } else {
-            console.log("No changes detected for profile update.");
-            return res.status(200).json({ success: true, message: "No changes detected. Profile remains the same.", user: user.toObject() });
-        }
+        //
+
 
 
         // Return the updated user object, excluding the password

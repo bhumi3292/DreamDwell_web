@@ -1,18 +1,4 @@
-// import { useEsewaPayment } from "../../hooks/payment/useEsewaPayment";
-//
-// const PropertyPage = ({ propertyId, price }) => {
-//     const { handleEsewaPayment, isProcessing } = useEsewaPayment();
-//
-//     return (
-//         <button
-//             onClick={() => handleEsewaPayment(propertyId, price)}
-//             disabled={isProcessing}
-//             className="btn btn-success"
-//         >
-//             {isProcessing ? "Processing..." : "Pay with eSewa"}
-//         </button>
-//     );
-// };
+
 
 import React from 'react';
 import PropTypes from 'prop-types';

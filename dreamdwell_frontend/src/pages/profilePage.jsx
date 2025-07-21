@@ -1,7 +1,7 @@
 // src/pages/ProfilePage.jsx
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { AuthContext } from "../auth/AuthProvider";
+import { AuthContext } from "../auth/AuthProvider.jsx";
 import { toast } from "react-toastify";
 import {
     User, Camera, Edit, Heart, MessageCircle, Settings, Clock, Home as HomeIcon, BellDot, Trash2,

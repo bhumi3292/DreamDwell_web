@@ -1,7 +1,8 @@
 // src/services/chatSocketService.js
 import { io } from 'socket.io-client';
+import { VITE_BACKEND_URL } from '../utils/env';
 
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL; // Should be http://localhost:3001
+const SOCKET_URL = VITE_BACKEND_URL; // Should be http://localhost:3001
 
 class ChatSocketService {
     constructor() {
@@ -114,5 +115,4 @@ class ChatSocketService {
     }
 }
 
-const chatSocketService = new ChatSocketService();
-export default chatSocketService;
+export default new ChatSocketService();

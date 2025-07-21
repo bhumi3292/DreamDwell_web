@@ -8,7 +8,7 @@ import { ToastContainer, toast } from 'react-toastify'; // <--- ADD toast if you
 import 'react-toastify/dist/ReactToastify.css';
 import logo from '../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../auth/authProvider'; // <--- IMPORTANT: Ensure this path is correct!
+import { AuthContext } from '../auth/AuthProvider.jsx';
 
 
 export default function LoginForm() {

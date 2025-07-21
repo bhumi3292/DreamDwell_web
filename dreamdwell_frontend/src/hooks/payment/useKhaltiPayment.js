@@ -3,13 +3,14 @@ import { useState, useCallback } from 'react';
 import KhaltiCheckout from 'Khalti-Checkout-web';
 import { toast } from 'react-toastify';
 import axios from 'axios'; // Import axios for the verification call
+import { VITE_KHALTI_PUBLIC_KEY, VITE_KHALTI_SECRET_KEY } from '../../utils/env';
 export const useKhaltiPayment = (productId, productName, amount) => {
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
     const [paymentError, setPaymentError] = useState(null);
 
-    const KHALTI_PUBLIC_KEY = import.meta.env.VITE_KHALTI_PUBLIC_KEY || "test_public_key_617c4c6fe77c441d88451ec1408a0c0e";
-    const KHALTI_SECRET_KEY = import.meta.env.VITE_KHALTI_SECRET_KEY || "test_secret_key_3f78fb6364ef4bd1b5fc670ce33a06f5";
+    const KHALTI_PUBLIC_KEY = VITE_KHALTI_PUBLIC_KEY;
+    const KHALTI_SECRET_KEY = VITE_KHALTI_SECRET_KEY;
 
     const initiateKhaltiPayment = useCallback(() => {
         if (!amount || amount <= 0) {

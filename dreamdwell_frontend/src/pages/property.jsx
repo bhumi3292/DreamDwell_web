@@ -8,7 +8,7 @@ import { getCategoriesApi } from "../api/categoryApi.js";
 import { Search } from 'lucide-react';
 import debounce from "lodash.debounce";
 import { toast } from "react-toastify";
-import { AuthContext } from "../auth/AuthProvider";
+import { AuthContext } from "../auth/AuthProvider.jsx";
 
 export default function PropertyPage() {
     const navigate = useNavigate();

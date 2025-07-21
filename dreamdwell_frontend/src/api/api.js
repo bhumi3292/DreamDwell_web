@@ -1,8 +1,9 @@
 // src/api/api.js
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { VITE_BACKEND_URL } from '../utils/env';
 
-export const API_URL = import.meta.env.VITE_BACKEND_URL;
+export const API_URL = VITE_BACKEND_URL;
 
 const instance = axios.create({
     baseURL: API_URL,

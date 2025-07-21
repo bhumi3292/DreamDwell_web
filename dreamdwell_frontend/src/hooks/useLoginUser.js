@@ -3,7 +3,7 @@ import { loginUserService} from "../services/authService";
 
 
 import { useMutation } from "@tanstack/react-query";
-import {AuthContext} from "../auth/authProvider";
+import { AuthContext } from "../auth/AuthProvider.jsx";
 import { useContext } from "react";
 export const useLoginUser = () => {
     const { login } = useContext(AuthContext);

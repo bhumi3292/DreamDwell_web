@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import { addToCartApi, removeFromCartApi, getCartApi } from '../api/cartApi';
 import { toast } from "react-toastify";
+import { VITE_API_BASE_URL } from '../utils/env';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+const API_BASE_URL = VITE_API_BASE_URL || "http://localhost:3001";
 
 const HeartIconComponent = ({ propertyId }) => {
     const [isWishlisted, setIsWishlisted] = useState(false);
