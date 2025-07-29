@@ -7,10 +7,7 @@ export const API_URL = VITE_BACKEND_URL;
 
 const instance = axios.create({
     baseURL: API_URL,
-    // REMOVE OR COMMENT OUT THIS LINE:
-    // headers: {
-    //     'Content-Type': 'application/json',
-    // },
+
 });
 
 // Request interceptor to attach token
@@ -20,13 +17,6 @@ instance.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-
-        // Add this conditional header for non-FormData requests if needed,
-        // but better to let Axios handle Content-Type for FormData.
-        // For FormData, config.headers['Content-Type'] will be undefined,
-        // allowing Axios to set 'multipart/form-data'.
-        // For JSON bodies, ensure 'application/json' is still handled,
-        // which Axios often defaults to for plain JS objects.
         if (config.data instanceof FormData) {
             // Do not set Content-Type for FormData, Axios handles it.
             // Delete it if it was somehow set previously by an interceptor or default.

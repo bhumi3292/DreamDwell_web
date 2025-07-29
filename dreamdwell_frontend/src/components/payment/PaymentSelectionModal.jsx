@@ -2,7 +2,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-// Assuming your assets are in src/assets
 import eSewaLogo from '../../assets/eSewa.png';
 import khaltiLogo from '../../assets/khalti.png';
 

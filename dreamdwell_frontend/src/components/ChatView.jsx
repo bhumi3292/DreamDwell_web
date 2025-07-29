@@ -1,13 +1,13 @@
 // src/components/ChatView.jsx
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { useChat } from '../hooks/useChat.js'; // ⭐ UNCOMMENT AND ENSURE .jsx EXTENSION ⭐
+import { useChat } from '../hooks/useChat.js';
 import { AuthContext } from '../auth/AuthProvider';
-import { toast } from 'react-toastify'; // ⭐ ADD THIS IMPORT ⭐
+import { toast } from 'react-toastify';
 import chatSocketService from '../services/chatSocketService';
 import { getFullMediaUrl } from '../utils/mediaUrlHelper';
 
 function ChatView({ selectedChatId, currentUserId }) {
-    // currentUserId is already being passed from ProfilePage, but also get user from context
+    // currentUserId is already being passed from ProfilePage.test.jsx, but also get user from context
     const { user } = useContext(AuthContext);
 
     const senderIdForMessages = currentUserId || user?._id;

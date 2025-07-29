@@ -20,8 +20,7 @@ instance.interceptors.request.use(
         }
 
         if (config.data instanceof FormData) {
-            // Do not set Content-Type for FormData, Axios handles it.
-            // Delete it if it was somehow set previously by an interceptor or default.
+
             delete config.headers['Content-Type'];
         } else if (!config.headers['Content-Type']) {
             // Default to application/json for non-FormData requests if not already set

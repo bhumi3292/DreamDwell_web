@@ -71,7 +71,7 @@ export default function AboutUs() {
                         We're on a mission to make finding and renting the perfect home as simple and stress-free as possible. Since
                         2016, we've been connecting renters with their dream properties.
                     </p>
-                    <Link to="/property"> {/* Changed to /property as per your Home.jsx */}
+                    <Link to="/property"> {/* Changed to /property as per your Home.test.jsx.jsx */}
                         <button className="bg-[#003366] hover:bg-[#002244] text-white px-8 py-3 text-lg rounded-md transition-colors">
                             Explore Properties
                         </button>
@@ -122,7 +122,7 @@ export default function AboutUs() {
                 </div>
             </section>
 
-            {/* Values Section (re-using the structure from Home.jsx) */}
+            {/* Values Section (re-using the structure from Home.test.jsx.jsx) */}
             <section className="py-16">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">

@@ -18,8 +18,6 @@ const requireTenant = roleCheck("Tenant");
 router.post("/create", protect, requireTenant, createBooking);
 router.get("/tenant", protect, requireTenant, getMyBookings);
 
-// Uncomment when implemented
-// router.get("/property/:propertyId", authenticateUser, requireLandlord, getBookingsForProperty);
-// router.delete("/:id", authenticateUser, requireTenant, cancelBooking);
+
 
 module.exports = router;

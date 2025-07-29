@@ -14,8 +14,7 @@ const extractFilePaths = (files) => {
 // Helper to delete files from the filesystem
 const deleteFiles = async (filePaths) => {
     const deletionPromises = filePaths.map(async (filePath) => {
-        // Construct the full absolute path from the project root.
-        // process.cwd() gives the current working directory, which is your backend root.
+
         const fullPath = path.join(process.cwd(), filePath);
         try {
             await fs.access(fullPath); // Check if file exists
@@ -115,6 +114,7 @@ exports.getOneProperty = async (req, res) => {
 
 // --- UPDATE PROPERTY --- (Improved error handling for file cleanup and validation)
 exports.updateProperty = async (req, res) => {
+    console.log(req.body)
     const newlyUploadedFilePaths = []; // Track files uploaded during this request for potential cleanup
     try {
         const property = await Property.findById(req.params.id);
@@ -187,7 +187,7 @@ exports.updateProperty = async (req, res) => {
 
         const updatedProperty = await Property.findByIdAndUpdate(
             req.params.id,
-            { $set: updateData },
+             updateData,
             { new: true, runValidators: true }
         );
 

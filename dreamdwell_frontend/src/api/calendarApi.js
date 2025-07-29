@@ -1,5 +1,5 @@
 // src/api/calendarApi.js
-import api from './api'; // IMPORTANT: Ensure this path correctly points to your centralized axios instance (src/api/api.js)
+import api from './api';
 
 export const getAvailableSlotsForPropertyApi = async (propertyId, date) => {
     try {
@@ -43,11 +43,7 @@ export const getTenantBookingsApi = async () => {
     }
 };
 
-/**
- * Cancels a booking. Note: This changes status to 'cancelled', not deletes the record.
- * @param {string} bookingId The ID of the booking to cancel.
- * @returns {Promise<object>} A promise that resolves to the cancellation confirmation.
- */
+
 export const cancelBookingApi = async (bookingId) => {
     try {
         const response = await api.delete(`/api/calendar/bookings/${bookingId}`); // Backend uses DELETE for cancellation

@@ -11,7 +11,7 @@ export default function ContactPage() {
             icon: Mail,
             title: "Email Us",
             description: "Send us an email and we'll respond within 24 hours",
-            contact: "dreamdwell.support@example.com", // Your desired email in the 'To' section
+            contact: "dreamdwell.support@example.com",
             action: "Send Email",
             type: "email",
         },
@@ -19,7 +19,7 @@ export default function ContactPage() {
             icon: Phone,
             title: "Call Us",
             description: "Speak directly with our support team",
-            contact: "+97798XXXXXXXX", // Nepal's country code, replace X's with actual number
+            contact: "+97798XXXXXXXX",
             action: "Call Now",
             type: "phone",
         },
@@ -87,24 +87,19 @@ export default function ContactPage() {
 
     const handleContactAction = (type, contactInfo) => {
         if (type === "email") {
-            // ⭐ UPDATED: Use the specific Gmail compose URL as in PropertyDetail ⭐
             const encodedEmail = encodeURIComponent(contactInfo);
             window.open(`https://mail.google.com/mail/u/0/#inbox?compose=new&to=${encodedEmail}`, '_blank');
         } else if (type === "phone") {
-            // Remove any non-digit characters from the phone number for WhatsApp
             const cleanedNumber = contactInfo.replace(/\D/g, '');
             window.open(`https://web.whatsapp.com/send?phone=${cleanedNumber}`, '_blank');
         } else if (type === "chat") {
-            // Placeholder for live chat - you would integrate a chat widget here
             alert("Live chat feature coming soon!");
         }
     };
 
     const handleFormSubmit = (e) => {
         e.preventDefault();
-        // Add form submission logic here (e.g., send data to an API)
         alert("Message sent! (This is a placeholder action)");
-        // You might clear the form or show a success message
     };
 
     return (

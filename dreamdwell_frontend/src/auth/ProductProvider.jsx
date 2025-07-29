@@ -86,7 +86,7 @@ const ProductContextProvider = ({ children }) => {
     // Fetch products when the component mounts
     useEffect(() => {
         fetchProducts();
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
     return (
         <ProductContext.Provider

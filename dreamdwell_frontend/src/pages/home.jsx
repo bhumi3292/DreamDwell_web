@@ -50,12 +50,10 @@ export default function Home() {
                 <div className="relative z-10 max-w-5xl mx-auto px-4 text-center py-20">
                     <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight animate-fade-in-up">
                         Find Your Perfect{" "}
-                        {/* ⭐ MODIFIED: Added text-glow-subtle animation ⭐ */}
                         <span className="block text-[#002B5B] animate-text-glow-subtle">
                             Dream Dwelling
                         </span>
                     </h1>
-                    {/* ⭐ MODIFIED: Ensure delay classes use the full animation name ⭐ */}
                     <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-2xl mx-auto leading-relaxed animate-fade-in-up-delay-200">
                         Discover unique places to stay around the world. From cozy cabins to luxury villas, your next adventure awaits.
                     </p>
@@ -67,7 +65,6 @@ export default function Home() {
                         Explore Properties
                     </Link>
 
-                    {/* ⭐ MODIFIED: Ensure delay classes use the full animation name ⭐ */}
                     <div className="grid grid-cols-3 gap-8 mt-16 max-w-lg mx-auto animate-fade-in-up-delay-600">
                         <div className="text-center">
                             <div className="text-3xl font-bold text-white">1M+</div>

@@ -1,14 +1,8 @@
 // dreamdwell_backend/controllers/cartController.js
 const Cart = require('../models/Cart'); // Assuming the model is named Cart.js
-const Property = require('../models/Property'); // Needed to validate property existence
-
-// Helper function to handle async errors without repetitive try/catch (if you use it)
-// If you don't have asyncHandler, remove it and use try/catch blocks directly.
+const Property = require('../models/Property');
 const { asyncHandler } = require('../utils/asyncHandler'); // Assuming you have this utility
 
-// @desc    Get user's cart
-// @route   GET /api/cart
-// @access  Protected
 exports.getCart = asyncHandler(async (req, res) => {
     const userId = req.user._id; // User ID from authenticated request
 
@@ -22,9 +16,6 @@ exports.getCart = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: "Cart retrieved successfully.", data: cart });
 });
 
-// @desc    Add property to cart
-// @route   POST /api/cart/add
-// @access  Protected
 exports.addToCart = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { propertyId } = req.body;
@@ -62,10 +53,6 @@ exports.addToCart = asyncHandler(async (req, res) => {
         return res.status(200).json({ success: true, message: "Property added to cart.", data: cart });
     }
 });
-
-// @desc    Remove property from cart
-// @route   DELETE /api/cart/remove/:propertyId
-// @access  Protected
 exports.removeFromCart = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { propertyId } = req.params; // Get propertyId from URL params
@@ -88,29 +75,15 @@ exports.removeFromCart = asyncHandler(async (req, res) => {
     await cart.save();
     res.status(200).json({ success: true, message: "Property removed from cart.", data: cart });
 });
-
-// @desc    Clear all items from cart
-// @route   DELETE /api/cart/clear
-// @access  Protected
 exports.clearCart = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
-    // Option 1: Remove the entire cart document (cleaner if cart is always created on first add)
     const result = await Cart.deleteOne({ user: userId });
 
     if (result.deletedCount === 0) {
         return res.status(404).json({ success: false, message: "Cart not found to clear." });
     }
 
-    // Option 2: Empty the items array but keep the cart document
-    // let cart = await Cart.findOne({ user: userId });
-    // if (cart) {
-    //     cart.items = [];
-    //     await cart.save();
-    //     return res.status(200).json({ success: true, message: "Cart cleared.", data: cart });
-    // } else {
-    //     return res.status(404).json({ success: false, message: "Cart not found to clear." });
-    // }
 
     res.status(200).json({ success: true, message: "Cart cleared successfully." });
 });

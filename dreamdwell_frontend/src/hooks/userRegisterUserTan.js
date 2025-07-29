@@ -16,4 +16,3 @@ export const useRegisterUserTan = () => {
         },
     )
 }
-// mutationFn: (formdata) => registerUserService(formdata)

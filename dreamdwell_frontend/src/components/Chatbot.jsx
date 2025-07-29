@@ -1,6 +1,6 @@
 // dreamdwell_frontend/src/components/Chatbot.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useChatbot } from '../hooks/chatbotHook/useChatbot.js'; // Ensure this path is correct for your project
+import { useChatbot } from '../hooks/chatbotHook/useChatbot.js';
 import { X, MessageSquare, Minimize2, Maximize2 } from 'lucide-react';
 
 const Chatbot = ({ onClose }) => {

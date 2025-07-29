@@ -6,7 +6,6 @@ import { useEsewaPayment } from '../../hooks/payment/useEsewaPayment'; // Adjust
 import { toast } from 'react-toastify'; // Make sure react-toastify is configured
 
 const PropertyPage = ({ propertyId, propertyPrice, propertyName }) => {
-    // Destructure the hook to get the payment initiation function and processing state
     const { initiateEsewaPayment, isProcessingEsewaPayment } = useEsewaPayment();
 
     const handlePayWithEsewa = () => {
@@ -15,12 +14,11 @@ const PropertyPage = ({ propertyId, propertyPrice, propertyName }) => {
             return;
         }
 
-        // Call the hook's function with the necessary data
         initiateEsewaPayment(
             propertyId,
             propertyPrice,
-            `Premium Listing for ${propertyName}`, // productName for eSewa
-            'property_listing_fee' // context for your PaymentRecord
+            `Premium Listing for ${propertyName}`,
+            'property_listing_fee'
         );
     };
 

@@ -19,7 +19,6 @@ const uploadProfilePictureService = async (file) => {
     return response.data;
 };
 
-// Service function for updating profile (now calls updateProfileApi)
 const updateProfileService = async (profileData) => {
     const response = await updateProfileApi(profileData);
     return response.data;

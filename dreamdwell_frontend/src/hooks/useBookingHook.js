@@ -13,7 +13,6 @@ export const useBookingModal = (propertyId, landlordId, isAuthenticated) => {
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [isBookingLoading, setIsBookingLoading] = useState(false);
 
-    // Fetches available slots for a given date
     const fetchSlotsForDate = useCallback(async (date) => {
         if (!propertyId || !date) return;
 
@@ -58,7 +57,6 @@ export const useBookingModal = (propertyId, landlordId, isAuthenticated) => {
         setIsBookingLoading(false);
     }, []);
 
-    // Handles date selection on the calendar
     const handleDateChange = useCallback((date) => {
         setSelectedDate(date);
         setSelectedTime(null); // Reset time when date changes
@@ -123,6 +121,6 @@ export const useBookingModal = (propertyId, landlordId, isAuthenticated) => {
         loadingAvailability,
         isBookingLoading,
         bookingSuccess,
-        availableSlots // Correctly return 'availableSlots'
+        availableSlots
     };
 };

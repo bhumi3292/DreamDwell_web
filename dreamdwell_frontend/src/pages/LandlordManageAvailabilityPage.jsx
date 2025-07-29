@@ -30,16 +30,13 @@ export default function LandlordManageAvailabilityPage() {
     const [loadingAvailabilities, setLoadingAvailabilities] = useState(true);
     const [error, setError] = useState(null);
 
-    // Stores all availabilities fetched from the backend, mapped by normalized date string
-    // e.g., { '2025-07-10': { _id: 'availId123', timeSlots: ['09:00 AM', '10:00 AM'] } }
     const [availabilitiesMap, setAvailabilitiesMap] = useState({});
-    const [selectedDate, setSelectedDate] = useState(new Date()); // Calendar's currently selected date
-    const [tempTimeSlotInput, setTempTimeSlotInput] = useState(''); // Input for new time slots
-    const [selectedDateSlots, setSelectedDateSlots] = useState([]); // Time slots for the *currently selected* date
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [tempTimeSlotInput, setTempTimeSlotInput] = useState('');
+    const [selectedDateSlots, setSelectedDateSlots] = useState([]);
     const [currentAvailabilityId, setCurrentAvailabilityId] = useState(null); // Availability ID for selected date
     const [isSaving, setIsSaving] = useState(false); // Loading state for save/delete operations
 
-    // Effect to fetch property and landlord's availabilities on component mount
     useEffect(() => {
         const fetchData = async () => {
             if (!isAuthenticated || isLoadingAuth) return; // Wait for authentication status to resolve

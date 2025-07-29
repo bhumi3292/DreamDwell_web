@@ -19,12 +19,9 @@ export default function PropertyPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 8;
 
-    // Fetch properties using React Query
     const { data: properties, isLoading: isLoadingProperties, isError, error } = useFetchProperties();
-    // Delete mutation using React Query
     const { mutate: deletePropertyMutation, isPending: isDeleting } = useDeleteProperty();
 
-    // Fetch categories using React Query
     const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
         queryKey: ["categories"],
         queryFn: async () => {

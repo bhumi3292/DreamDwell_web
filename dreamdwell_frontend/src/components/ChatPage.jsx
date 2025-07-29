@@ -1,9 +1,9 @@
 // src/components/ChatPage.jsx
 import React, { useState, useContext } from 'react';
-import { AuthContext } from '../auth/AuthProvider'; // Assuming AuthContext provides user info
+import { AuthContext } from '../auth/AuthProvider';
 import { useQuery } from '@tanstack/react-query';
-import { getMyChats } from '../api/chatApi'; // Import the API call for getting user's chats
-import ChatView from './ChatView'; // Import the ChatView component
+import { getMyChats } from '../api/chatApi';
+import ChatView from './ChatView';
 import { useLocation } from 'react-router-dom';
 
 const ChatPage = () => {
@@ -11,7 +11,6 @@ const ChatPage = () => {
     const [selectedChatId, setSelectedChatId] = useState(null);
     const location = useLocation();
 
-    // Auto-select chat if preselectChatId is passed via navigation
     React.useEffect(() => {
         if (location.state && location.state.preselectChatId) {
             setSelectedChatId(location.state.preselectChatId);
@@ -24,13 +23,11 @@ const ChatPage = () => {
         isLoading: chatsLoading,
         isError: chatsError,
         error: chatsFetchError,
-        refetch: refetchMyChats // Add refetch for the chat list
+        refetch: refetchMyChats
     } = useQuery({
-        queryKey: ['myChats', user?._id], // Query key for fetching user's chats
+        queryKey: ['myChats', user?._id],
         queryFn: () => getMyChats(),
-        enabled: isAuthenticated && !!user?._id, // Only fetch if user is authenticated and ID exists
-        // Add staleTime/cacheTime as appropriate for chat lists
-        // staleTime: 1 * 60 * 1000, // 1 minute
+        enabled: isAuthenticated && !!user?._id,
     });
 
     if (authLoading) {

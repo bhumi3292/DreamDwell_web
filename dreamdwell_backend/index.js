@@ -111,8 +111,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// ⭐ EXPORT THE APP INSTANCE ⭐
-// This is the key change for Supertest to work correctly.
+
 module.exports = app;
 
 // ========== Conditional Server Start & Socket.IO Setup ==========
@@ -162,6 +161,7 @@ if (require.main === module) {
         });
 
         socket.on("sendMessage", async ({ chatId, senderId, text }) => {
+            console.log(chatId,senderId,text)
             if (!chatId || !senderId || !text || text.trim() === '') {
                 socket.emit('messageError', { message: 'Missing chat ID, sender ID, or message text.' });
                 return;

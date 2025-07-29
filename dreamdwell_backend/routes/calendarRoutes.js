@@ -22,33 +22,18 @@ router.post('/availabilities',
     calendarController.createAvailability
 );
 
-/**
- * @route   GET /api/calendar/landlord/availabilities
- * @desc    Landlord gets all their availability entries.
- * @access  Private (Landlord only)
- */
 router.get('/landlord/availabilities',
     requireRole('landlord'),
     calendarController.getLandlordAvailabilities
 );
 
-/**
- * @route   PUT /api/calendar/availabilities/:id
- * @desc    Landlord updates time slots for an existing availability entry.
- * @access  Private (Landlord only, and only for their own availability entry)
- */
+
 router.put('/availabilities/:id',
     requireRole('landlord'),
     // Ensures the authenticated landlord is the owner of this specific availability resource
     isOwnerOrRelatedResource(Availability, 'id'),
     calendarController.updateAvailability
 );
-
-/**
- * @route   DELETE /api/calendar/availabilities/:id
- * @desc    Landlord deletes an entire availability entry.
- * @access  Private (Landlord only, and only for their own availability entry)
- */
 router.delete('/availabilities/:id',
     requireRole('landlord'),
     // Ensures the authenticated landlord is the owner of this specific availability resource

@@ -13,13 +13,12 @@ const messageSubSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    createdAt: { // Add createdAt to sub-document for individual message timestamp
+    createdAt: {
         type: Date,
         default: Date.now
     }
 });
 
-// Define the main chat schema
 const chatSchema = new mongoose.Schema(
     {
         name: {

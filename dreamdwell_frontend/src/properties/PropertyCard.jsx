@@ -16,8 +16,7 @@ const HeartIconComponent = ({ propertyId }) => {
         try {
             const response = await getCartApi();
             if (response.data && Array.isArray(response.data.data)) {
-                // The cart API response structure might be different from your `getCartApi` in cartApi.js.
-                // It should return an array of properties, not items with a property object.
+
                 const wishlisted = response.data.data.some(item => item._id === propertyId);
                 setIsWishlisted(wishlisted);
             }

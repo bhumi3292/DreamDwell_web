@@ -4,7 +4,7 @@ import React, { useContext } from 'react'; // <--- ADD useContext
 import { useLoginUser } from '../hooks/useLoginUser.js';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { ToastContainer, toast } from 'react-toastify'; // <--- ADD toast if you want to use it
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import logo from '../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ import { AuthContext } from '../auth/AuthProvider.jsx';
 export default function LoginForm() {
     const { mutate, isLoading } = useLoginUser();
     const navigate = useNavigate();
-    const { login } = useContext(AuthContext); // <--- GET THE LOGIN FUNCTION FROM AUTHCONTEXT
+    const { login } = useContext(AuthContext);
 
     const validationSchema = Yup.object({
         email: Yup.string().email("Invalid email").required("Email is required"),
@@ -51,7 +51,6 @@ export default function LoginForm() {
         },
     });
 
-    // ... (rest of your LoginForm component JSX remains the same)
     return (
         <div className="flex flex-col lg:flex-row h-screen bg-gray-50 items-center justify-center px-5 gap-8">
             {/* Left Side */}

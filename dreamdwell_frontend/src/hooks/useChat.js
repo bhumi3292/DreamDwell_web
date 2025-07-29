@@ -33,13 +33,10 @@ export const useChat = (chatId, currentUserId) => {
         chatSocketService.joinChat(chatId);
 
         const cleanupNewMessage = chatSocketService.onNewMessage((newMessage) => {
-            // Check if the incoming message belongs to the current chat being viewed
-            // The backend should typically send `newMessage.chat` as the chat's ID
+
             if (newMessage.chat === chatId) {
                 queryClient.setQueryData(chatQueryKey, (oldChat) => {
                     if (oldChat && oldChat.messages) {
-                        // Filter out the optimistic message if a real message with the same ID arrives
-                        // This handles cases where backend might send an _id very quickly
                         const existingMessageIndex = oldChat.messages.findIndex(
                             msg => msg.isOptimistic && msg.text === newMessage.text && msg.sender?._id === newMessage.sender?._id
                         );
@@ -83,7 +80,6 @@ export const useChat = (chatId, currentUserId) => {
             if (!chatId) {
                 throw new Error("Chat ID is required to send a message.");
             }
-            // ⭐ CORRECTED: Pass arguments individually as per chatSocketService.sendMessage signature ⭐
             chatSocketService.sendMessage(chatId, currentUserId, text);
         },
         onMutate: async (text) => {
@@ -117,9 +113,7 @@ export const useChat = (chatId, currentUserId) => {
             }
         },
         onSettled: () => {
-            // After mutation (success or error), you might want to invalidate to refetch if optimistic update failed
-            // or if you want to ensure data consistency with backend if socket updates are not guaranteed
-            // However, with real-time socket updates, this is often not needed for the message list itself.
+
         }
     });
 

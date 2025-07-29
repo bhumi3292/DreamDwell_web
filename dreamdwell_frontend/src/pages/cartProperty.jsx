@@ -7,11 +7,7 @@ import {
     getCartService,
     removeFromCartService
 } from '../services/cartService.js';
-// Import API_URL from your centralized API file
-import { API_URL } from '../api/api.js'; // Assuming this path is correct
-
-// Remove the locally defined API_BASE_URL
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+import { API_URL } from '../api/api.js';
 
 export default function CartPage() {
     const [cartItems, setCartItems] = useState([]);

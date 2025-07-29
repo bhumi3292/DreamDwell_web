@@ -1,4 +1,4 @@
-// src/pages/ProfilePage.jsx
+// src/pages/ProfilePage.test.jsx.jsx
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../auth/AuthProvider.jsx";

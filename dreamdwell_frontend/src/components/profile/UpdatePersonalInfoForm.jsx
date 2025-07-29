@@ -2,11 +2,11 @@
 import React, { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
 import { Edit } from "lucide-react";
-import { AuthContext } from "../../auth/AuthProvider"; // Adjust path as needed
-import { useUpdateProfile } from "../../hooks/useAuthHooks"; // Adjust path as needed
+import { AuthContext } from "../../auth/AuthProvider";
+import { useUpdateProfile } from "../../hooks/useAuthHooks";
 
 export default function UpdatePersonalInfoForm() {
-    const { user, setUser } = useContext(AuthContext); // Get setUser from context
+    const { user, setUser } = useContext(AuthContext);
     const [personalInfoForm, setPersonalInfoForm] = useState({
         fullName: "",
         email: "",
@@ -58,8 +58,7 @@ export default function UpdatePersonalInfoForm() {
         updateProfile(personalInfoForm, {
             onSuccess: (response) => {
                 if (response.success && response.user) {
-                    setUser(response.user); // ⭐ Update AuthContext with new user data ⭐
-                    // You might also want to update localStorage here if setUser doesn't do it implicitly
+                    setUser(response.user);
                     localStorage.setItem('user', JSON.stringify(response.user));
                     toast.success("Profile updated successfully!");
                 } else {

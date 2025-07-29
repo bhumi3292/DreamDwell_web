@@ -1,17 +1,16 @@
 // src/components/BookingModal.jsx
 import React from 'react';
 import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css'; // Default react-calendar styles are still needed
+import 'react-calendar/dist/Calendar.css';
 import { X, Clock, Info, Home, Calendar as CalendarIcon, CheckCircle, Loader } from 'lucide-react';
-// REMOVED: import './BookingModal.css'; // Custom styles for react-calendar go into global CSS (e.g., index.css)
 
 const BookingModal = ({
                           show,
                           onClose,
                           propertyTitle,
-                          propertyId, // Passed for completeness, not directly used in modal UI
-                          landlordId, // Passed for completeness, not directly used in modal UI
-                          isAuthenticated, // Passed for completeness, not directly used in modal UI
+                          propertyId,
+                          landlordId,
+                          isAuthenticated,
                           selectedDate,
                           handleDateChange,
                           currentDaySlots,
@@ -23,19 +22,14 @@ const BookingModal = ({
                           bookingSuccess,
                           availableSlots // Corrected prop name: 'availableSlots'
                       }) => {
-    if (!show) return null; // Render nothing if modal is not shown
-
-    // Function to add a CSS class to calendar tiles based on availability
-    // This class ('has-availability') needs to be defined in your global CSS (e.g., index.css)
+    if (!show) return null;
     const tileClassName = ({ date, view }) => {
         if (view === 'month') {
             const dateString = date.toISOString().split('T')[0];
             const today = new Date();
-            today.setUTCHours(0, 0, 0, 0); // Normalize today's date for comparison
-
-            // Highlight dates that are today or in the future and have available slots
+            today.setUTCHours(0, 0, 0, 0);
             if (date.getTime() >= today.getTime() && availableSlots[dateString] && availableSlots[dateString].length > 0) {
-                return 'has-availability'; // This class should be defined in global CSS
+                return 'has-availability';
             }
         }
         return null; // No custom class

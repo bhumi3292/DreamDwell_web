@@ -200,10 +200,7 @@ export default function PropertyDetail() {
             toast.error('Landlord phone number not available for WhatsApp chat.');
             return;
         }
-        // Format the phone number for WhatsApp (remove non-digits, ensure country code if needed)
-        // For example, if numbers are stored as "9813895837", you might need to prepend "977" for Nepal.
-        // Assuming your database number is ready for direct use or a default country code is implied.
-        const cleanedPhoneNumber = phoneNumber.replace(/\D/g, ''); // Remove all non-digit characters
+
         const whatsappUrl = `https://web.whatsapp.com/send?phone=${cleanedPhoneNumber}`;
         window.open(whatsappUrl, '_blank');
     };

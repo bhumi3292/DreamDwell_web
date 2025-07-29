@@ -43,9 +43,6 @@ const initiatePayment = async (req, res) => {
     }
 };
 
-// @desc    Verify Khalti payment
-// @route   POST /api/payments/verify/khalti
-// @access  Public (Khalti will send a callback)
 const verifyKhaltiPayment = async (req, res) => {
     const { token, amount, idx, pidx, status, transaction_id, purchase_order_id } = req.body;
 
@@ -55,9 +52,7 @@ const verifyKhaltiPayment = async (req, res) => {
     }
 
     try {
-        // Find the payment record in your database using a relevant identifier
-        // This is crucial: You need a way to link the Khalti callback to your payment record.
-        // For example, if you passed your internal payment ID as a purchase_order_id to Khalti.
+
         const payment = await Payment.findOne({ source_payment_id: idx, source: 'khalti' }); // Or use purchase_order_id if you mapped it
         if (!payment) {
             console.warn(`Khalti callback: Payment record not found for idx: ${idx}`);
@@ -107,16 +102,8 @@ const verifyKhaltiPayment = async (req, res) => {
     }
 };
 
-
-// @desc    Verify eSewa payment
-// @route   POST /api/payments/verify/esewa
-// @access  Public (eSewa will send a callback)
 const verifyEsewaPayment = async (req, res) => {
-    // eSewa usually redirects with parameters in the URL for success/failure.
-    // The actual verification typically happens on your server using their API.
-    // The exact parameters from eSewa's callback might vary,
-    // so adjust `req.body` or `req.query` accordingly.
-    // Common parameters include `oid` (order ID), `amt` (amount), `refId` (reference ID).
+
     const { oid, amt, refId } = req.body; // Or req.query, depending on eSewa's callback method
 
     if (!oid || !amt || !refId) {
@@ -124,7 +111,6 @@ const verifyEsewaPayment = async (req, res) => {
     }
 
     try {
-        // Find the payment record in your database using your order ID (oid)
         const payment = await Payment.findOne({ source_payment_id: oid, source: 'esewa' });
         if (!payment) {
             console.warn(`eSewa callback: Payment record not found for oid: ${oid}`);

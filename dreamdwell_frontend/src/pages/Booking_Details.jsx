@@ -2,15 +2,15 @@
 import React, { useContext } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { AuthContext } from '../auth/AuthProvider'; // Adjust path as needed
+import { AuthContext } from '../auth/AuthProvider';
 import {
     getTenantBookingsApi,
     getLandlordBookingsApi,
     cancelBookingApi,
     updateBookingStatusApi
-} from '../api/calendarApi'; // Adjust path as needed
+} from '../api/calendarApi';
 import { Home, Calendar as CalendarIcon, Clock, User, Info, CheckCircle, XCircle, Loader, CircleSlash } from 'lucide-react';
-import { API_URL } from '../api/api'; // Assuming you exported API_URL from src/api/api.js
+import { API_URL } from '../api/api';
 
 const BookingDetailsPage = () => {
     const { user, isAuthenticated, loading: authLoading } = useContext(AuthContext);
@@ -47,7 +47,6 @@ const BookingDetailsPage = () => {
         },
     });
 
-    // Mutation for landlord to update booking status
     const updateBookingStatusMutation = useMutation({
         mutationFn: ({ bookingId, status }) => updateBookingStatusApi(bookingId, status),
         onSuccess: (data, variables) => {

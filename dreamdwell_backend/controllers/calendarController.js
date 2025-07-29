@@ -162,9 +162,7 @@ exports.updateAvailability = async (req, res) => {
     }
 };
 
-// @desc    Landlord deletes an entire availability entry.
-// @route   DELETE /api/calendar/availabilities/:id
-// @access  Private (Landlord, and authorized by isOwnerOrRelatedResource middleware)
+
 exports.deleteAvailability = async (req, res) => {
     const { id } = req.params;
     const landlordId = req.user._id;
@@ -201,9 +199,6 @@ exports.deleteAvailability = async (req, res) => {
 
 // --- Tenant Specific Controller Functions ---
 
-// @desc    Get available slots for a specific property on a given date
-// @route   GET /api/calendar/properties/:propertyId/available-slots
-// @access  Private (Tenant)
 exports.getAvailableSlotsForProperty = async (req, res) => {
     const { propertyId } = req.params;
     const { date } = req.query;
@@ -328,9 +323,7 @@ exports.bookVisit = async (req, res) => {
     }
 };
 
-// @desc    Get all bookings for the authenticated tenant
-// @route   GET /api/calendar/tenant/bookings
-// @access  Private (Tenant)
+
 exports.getTenantBookings = async (req, res) => {
     const tenantId = req.user._id;
 
@@ -380,9 +373,6 @@ exports.getLandlordBookings = async (req, res) => {
     }
 };
 
-// @desc    Update booking status (e.g., 'confirmed', 'rejected', 'cancelled')
-// @route   PUT /api/calendar/bookings/:id/status
-// @access  Private (Landlord, and authorized by isOwnerOrRelatedResource middleware)
 exports.updateBookingStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
@@ -412,9 +402,6 @@ exports.updateBookingStatus = async (req, res) => {
 
         const oldStatus = booking.status;
         booking.status = newStatus;
-
-        // ⭐ IMPORTANT: Manage Availability based on status change ⭐
-        // If status changes to 'rejected' or 'cancelled' from an active state ('pending' or 'confirmed')
         if ((newStatus === 'rejected' || newStatus === 'cancelled') &&
             (oldStatus === 'pending' || oldStatus === 'confirmed')) {
             // Slot needs to be freed up
@@ -447,10 +434,6 @@ exports.updateBookingStatus = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error updating booking status.', error: error.message });
     }
 };
-
-// @desc    Delete/Cancel a booking (primarily used for Tenant cancellation, but Landlord can also use)
-// @route   DELETE /api/calendar/bookings/:id
-// @access  Private (Tenant/Landlord, authorized by isOwnerOrRelatedResource middleware)
 exports.deleteBooking = async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id; // Current user performing the action
@@ -467,7 +450,6 @@ exports.deleteBooking = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Access denied: You are not authorized to cancel this booking.' });
         }
 
-        // ⭐ IMPORTANT: Change status to 'cancelled' instead of actual deletion for history ⭐
         const oldStatus = booking.status;
 
         if (oldStatus === 'completed' || oldStatus === 'rejected' || oldStatus === 'cancelled') {
@@ -477,7 +459,6 @@ exports.deleteBooking = async (req, res) => {
         booking.status = 'cancelled'; // Set status to cancelled
         await booking.save();
 
-        // ⭐ IMPORTANT: Free up the slot in Availability if it was active ⭐
         if (oldStatus === 'pending' || oldStatus === 'confirmed') {
             const normalizedDate = normalizeDateString(booking.date);
             const availability = await Availability.findOne({
